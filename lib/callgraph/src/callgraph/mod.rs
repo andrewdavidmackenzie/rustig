@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 // (C) COPYRIGHT 2018 TECHNOLUTION BV, GOUDA NL
 
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -160,11 +161,11 @@ fn parse_compilation_unit_subprograms<PM: Default>(
                 _ => (),
             }
 
-            let NameInfo { linkage_name, .. } = fetch_function_names(&unit, ctx, &entry);
+            let NameInfo { linkage_name, .. } = fetch_function_names(unit, ctx, entry);
             let LocationInfo {
                 address: start_address,
                 size,
-            } = fetch_function_location_info(&entry, &linkage_name);
+            } = fetch_function_location_info(entry, &linkage_name);
 
             // Skip functions with low_pc = 0
             if start_address == 0 {
@@ -175,8 +176,8 @@ fn parse_compilation_unit_subprograms<PM: Default>(
                 unit,
                 ctx,
                 compilation_unit_dirs,
-                &cu,
-                &entry,
+                cu,
+                entry,
                 start_address,
                 size,
             );
@@ -201,7 +202,7 @@ fn get_procedure<PM: Default>(
         name,
         linkage_name,
         linkage_name_demangled,
-    } = fetch_function_names(&unit, ctx, &entry);
+    } = fetch_function_names(unit, ctx, entry);
     let MachineCode {
         address: code_address,
         raw_instr: proc_instr_raw,
@@ -229,8 +230,8 @@ fn get_procedure<PM: Default>(
         crate_utils::get_crate_details(
             code_address,
             defining_file,
-            &cu,
-            &ctx,
+            cu,
+            ctx,
             compilation_unit_dirs,
         )
     };
@@ -276,13 +277,13 @@ fn fetch_function_location_info(
     linkage_name: &str,
 ) -> LocationInfo {
     let start_address =
-        dwarf_utils::get_attr_addr_value(&entry, DW_AT_low_pc).unwrap_or_else(|| {
+        dwarf_utils::get_attr_addr_value(entry, DW_AT_low_pc).unwrap_or_else(|| {
             panic!(
                 "No DW_AT_low_pc attribute found for function {}",
                 linkage_name
             )
         });
-    let size = dwarf_utils::get_attr_u64_value(&entry, DW_AT_high_pc).unwrap_or_else(|| {
+    let size = dwarf_utils::get_attr_u64_value(entry, DW_AT_high_pc).unwrap_or_else(|| {
         panic!(
             "No DW_AT_high_pc attribute found for function {}",
             linkage_name
@@ -302,14 +303,14 @@ fn fetch_function_names(
 ) -> NameInfo {
     // Fetch function details
     let name = dwarf_utils::get_attr_str_with_origin_traversal(
-        &unit,
+        unit,
         entry,
         gimli::DW_AT_name,
         &unit.abbreviations(&ctx.dwarf_abbrev).unwrap(),
         &ctx.dwarf_strings,
     );
     let linkage_name = dwarf_utils::get_attr_str_with_origin_traversal(
-        &unit,
+        unit,
         entry,
         gimli::DW_AT_linkage_name,
         &unit.abbreviations(&ctx.dwarf_abbrev).unwrap(),
@@ -374,7 +375,7 @@ fn get_procedures_for_compilation_unit<PMetadata: Default>(
     // Let cursor select first unit
     // Return found
     let res: Vec<Procedure<PMetadata>> =
-        iterate_compilation_unit(unit_header, &mut entries, &ctx, &compilation_unit_dirs);
+        iterate_compilation_unit(unit_header, &mut entries, ctx, compilation_unit_dirs);
     res
 }
 
@@ -393,14 +394,14 @@ impl<PMetadata: Default, IMetadata: Default, FMetadata: Default>
 
         // Fill fields for CallGraph
         let call_graph: CallGraph<PMetadata, IMetadata, FMetadata> = {
-            let compilation_unit_dirs = get_compilation_unit_directories(&ctx);
-            let rust_version = dwarf_utils::get_rust_version(&ctx);
+            let compilation_unit_dirs = get_compilation_unit_directories(ctx);
+            let rust_version = dwarf_utils::get_rust_version(ctx);
 
             // Iterator over compilation units
             ctx.dwarf_info.units()
                 // Map all compilation units to their respective procedures
                 .map(|unit_header| {
-                    get_procedures_for_compilation_unit(&ctx, &compilation_unit_dirs, unit_header)
+                    get_procedures_for_compilation_unit(ctx, &compilation_unit_dirs, unit_header)
                 })
                 // Flatten Vec<Vec<Procedure>> to Vec<Procedure>
                 .fold(vec!(), |mut vec: Vec<Procedure<PMetadata>>, mut elem| {
@@ -421,7 +422,7 @@ impl<PMetadata: Default, IMetadata: Default, FMetadata: Default>
                     // Add every call instruction of a procedure to the address to index map.
                     graph[idx].borrow().disassembly.iter()
                         .filter(|insn| {
-                            ctx.capstone.insn_group_ids(&insn).unwrap().any(|id| id == group_calls || id == group_jumps)
+                            ctx.capstone.insn_group_ids(insn).unwrap().any(|id| id == group_calls || id == group_jumps)
                         })
                         .for_each(|insn| {
                             call_index.insert(insn.address(), idx); });
@@ -434,7 +435,7 @@ impl<PMetadata: Default, IMetadata: Default, FMetadata: Default>
                     &mut graph,
                     &mut proc_index,
                     &mut call_index,
-                    &ctx,
+                    ctx,
                     CompilationInfo {
                         compilation_dirs: &compilation_unit_dirs,
                         rust_version: &rust_version.as_ref().cloned().unwrap_or_default(),

@@ -14,14 +14,14 @@ use std::io::Read;
 
 /// Trait marking objects that can read a binary file, and return the content as a `Vec<u8>`.
 pub trait BinaryReader {
-    fn read<'a>(&self, binary: &'a Binary) -> Result<Vec<u8>>;
+    fn read(&self, binary: &Binary) -> Result<Vec<u8>>;
 }
 
 /// Default implementation of `BinaryReader`, that reads the file, without any extraordinary processing.
 struct DefaultBinaryReader;
 
 impl BinaryReader for DefaultBinaryReader {
-    fn read<'a>(&self, binary: &'a Binary) -> Result<Vec<u8>> {
+    fn read(&self, binary: &Binary) -> Result<Vec<u8>> {
         let mut file_content = Vec::new();
         let mut file = std::fs::File::open(binary.path)
             .chain_err(|| ErrorKind::IOError(binary.path.to_str().unwrap().to_string()))?;

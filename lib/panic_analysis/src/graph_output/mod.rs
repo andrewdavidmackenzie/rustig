@@ -89,7 +89,7 @@ pub fn get_graph_output_filtered(options: &AnalysisOptions) -> Box<dyn GraphOutp
     get_boxed_output(
         options.output_filtered_callgraph,
         "filtered".to_string(),
-        get_name_from_options(&options),
+        get_name_from_options(options),
     )
 }
 
@@ -98,7 +98,7 @@ pub fn get_graph_output_full(options: &AnalysisOptions) -> Box<dyn GraphOutput> 
     get_boxed_output(
         options.output_full_callgraph,
         "full".to_string(),
-        get_name_from_options(&options),
+        get_name_from_options(options),
     )
 }
 

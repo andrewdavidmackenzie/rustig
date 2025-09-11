@@ -23,7 +23,7 @@ use petgraph::visit::EdgeRef;
 struct WhiteListFunctionFilter;
 
 impl WhiteListFunctionFilter {
-    fn traverse_graph(&self, index: NodeIndex<u32>, graph: &RustigGraph) {
+    fn traverse_graph(index: NodeIndex<u32>, graph: &RustigGraph) {
         let procedure = graph[index].borrow();
 
         // If function is whitelisted, ignore it
@@ -43,7 +43,7 @@ impl WhiteListFunctionFilter {
 
                 // Check whether neighbor has been visited yet, if not visit it before we continue (DFS)
                 if !neighbor.attributes.reachable_from_entry_point.get() {
-                    self.traverse_graph(neighbor_idx, graph);
+                    Self::traverse_graph(neighbor_idx, graph);
                 }
             });
     }
@@ -57,7 +57,7 @@ impl NodeFilter for WhiteListFunctionFilter {
             node_indices
                 .filter(|idx| call_graph.graph[*idx].borrow().attributes.entry_point.get())
                 .for_each(|entry_point_idx| {
-                    self.traverse_graph(entry_point_idx, &call_graph.graph)
+                    WhiteListFunctionFilter::traverse_graph(entry_point_idx, &call_graph.graph)
                 });
         }
 
@@ -165,7 +165,7 @@ mod tests {
             whitelist_bar,
         );
 
-        let mut og = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut og = petgraph::stable_graph::StableGraph::new();
         let i_foo = og.add_node(Rc::new(RefCell::new(procedure_foo)));
         let i_bar = og.add_node(Rc::new(RefCell::new(procedure_bar)));
 

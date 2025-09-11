@@ -48,16 +48,16 @@ type DebugData<'a> = (
 
 impl Parser for DefaultParser {
     fn parse<'a>(&self, file_content: &'a [u8]) -> Result<Context<'a>> {
-        let elf = ElfFile::parse(&file_content)
+        let elf = ElfFile::parse(file_content)
             .map_err(|message| Error::from(ErrorKind::ParseError(message.to_string())))?;
 
-        let file = File::parse(&file_content)
+        let file = File::parse(file_content)
             .map_err(|message| Error::from(ErrorKind::ParseError(message.to_string())))?;
 
         let file_context = Addr2LineContext::new(&file).map_err(|message| {
             Error::from(ErrorKind::ParseError(format!(
                 "Could not construct addr2line context from file: {}",
-                message.to_string()
+                message
             )))
         })?;
 

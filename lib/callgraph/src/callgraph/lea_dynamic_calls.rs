@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 // (C) COPYRIGHT 2018 TECHNOLUTION BV, GOUDA NL
 
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -176,7 +178,7 @@ impl<P, I: Default, F: Default> LEABasedDynamicInvocationFinder<P, I, F> {
 
         // First do en early return if the first entry of the assumed vtable is not a destructor
         let (mut offset, vtable_data, vtable_first_entry, is_destructor) =
-            self.get_vtable_metadata(graph, proc_index, mem_location, &vtable_section);
+            self.get_vtable_metadata(graph, proc_index, mem_location, vtable_section);
 
         if !is_destructor {
             return vec![];
@@ -313,12 +315,12 @@ impl<P, I: Default, F: Default> LEABasedDynamicInvocationFinder<P, I, F> {
                                   InvocationType::ProcedureReference)),
                         // Register offset (often a vtable)
                         X86OperandType::Mem(op) =>
-                            self.find_mem_value(&lea_instr, &op, &graph,
-                                                &proc_index, &ctx, &prc),
+                            self.find_mem_value(&lea_instr, &op, graph,
+                                                proc_index, ctx, prc),
                         _ => vec!()
                     }) // Finish pipeline
             })
-            .flat_map(|x| x)
+            .flatten()
             .collect::<Vec<_>>()
     }
 
@@ -358,7 +360,7 @@ impl<P, I: Default, F: Default> LEABasedDynamicInvocationFinder<P, I, F> {
                     .collect();
                 graph.add_edge(
                     idx,
-                    proc_index[&target_addr],
+                    proc_index[target_addr],
                     Rc::new(RefCell::new(Invocation {
                         invocation_type: *invocation_type,
                         instruction_address: *lea_addr,
@@ -418,7 +420,7 @@ impl<P, I: Default, F: Default> InvocationFinder<P, I, F>
             let prc = graph[*idx].clone();
             let prc = prc.borrow();
             let dest_indices =
-                self.find_dynamic_invocations_for_procedure(graph, proc_index, &ctx, &prc);
+                self.find_dynamic_invocations_for_procedure(graph, proc_index, ctx, &prc);
 
             self.create_dynamic_edges(
                 graph,

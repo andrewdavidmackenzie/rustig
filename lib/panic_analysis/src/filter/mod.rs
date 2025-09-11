@@ -54,8 +54,8 @@ impl NodeFilter for NullNodeFilter {
 
 pub fn get_node_filters(options: &AnalysisOptions) -> Box<dyn NodeFilter> {
     let filters: Vec<Box<dyn NodeFilter>> = vec![
-        panic_filter::get_panic_filter(&options),
-        whitelist_filter::get_whitelist_filter(&options),
+        panic_filter::get_panic_filter(options),
+        whitelist_filter::get_whitelist_filter(options),
     ];
 
     Box::new(CombinedNodeFilter { filters })

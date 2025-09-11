@@ -50,7 +50,7 @@ impl PanicCallsFinder for DefaultPanicCallsFinder {
             .edge_indices()
             // Find all edges crossing the line between analysis targets and library code
             .filter(|edge_index| {
-                DefaultPanicCallsFinder::leaves_analysis_target(&call_graph, *edge_index)
+                DefaultPanicCallsFinder::leaves_analysis_target(call_graph, *edge_index)
             })
             // For each of these edges, add the full backtrace to panic_calls
             .map(|edge_index| {
@@ -80,11 +80,11 @@ impl PanicCallsFinder for DefaultPanicCallsFinder {
                 // This means that even if there are 2 different edges between 2 of the same nodes, they should both provide a different stacktrace.
                 // Therefore we are adding this edge to the backtrace before entering the while loop which uses petgraph::stable_graph::find_edge().
                 let (backtrace, contains_dynamic_invocation) =
-                    self.build_full_backtrace(&call_graph, edge_index, &backtrace_target);
+                    self.build_full_backtrace(call_graph, edge_index, &backtrace_target);
 
                 let message: Option<String> = self.message_finders
                     .iter()
-                    .filter_map(|finder| finder.find_panic_message(&backtrace, &call_graph, &context))
+                    .filter_map(|finder| finder.find_panic_message(&backtrace, call_graph, context))
                     .next();
 
                 PanicCall {
@@ -121,7 +121,7 @@ impl DefaultPanicCallsFinder {
         DefaultPanicCallsFinder::update_shortest_path_bfs(graph, queue)
     }
 
-    fn update_shortest_path_bfs(graph: &RustigGraph, mut queue: VecDeque<NodeIndex<u32>>) -> () {
+    fn update_shortest_path_bfs(graph: &RustigGraph, mut queue: VecDeque<NodeIndex<u32>>) {
         // BFS to find the shortest paths from a panic to every node.
         while let Some(node_index) = queue.pop_front() {
             let neighbors_iter = graph.neighbors_directed(node_index, Incoming);

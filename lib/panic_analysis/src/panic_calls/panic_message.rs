@@ -67,8 +67,8 @@ impl PanicMessageFinder for CorePanickingPanicMessageFinder {
     ) -> Option<String> {
         // get_call_instruction guarantees array length of `count`, so indexing is safe
         let instruction = &get_call_instruction(backtrace, 1, "core::panicking::panic")?[0];
-        let registers = get_instruction_operand_registers(&context.capstone, &instruction);
-        let operands = get_instruction_operand_values(&context.capstone, &instruction);
+        let registers = get_instruction_operand_registers(&context.capstone, instruction);
+        let operands = get_instruction_operand_values(&context.capstone, instruction);
 
         // registers[0] is the destination register, which should be equal to RDI
         if registers[0] == Some(REG_ID_RDI) && instruction.id() == INS_ID_LEA {
@@ -159,9 +159,9 @@ impl PanicMessageFinder for StdPanickingBeginPanicMessageFinder {
         }
 
         let instruction_registers =
-            get_instruction_operand_registers(&context.capstone, &last_instruction);
+            get_instruction_operand_registers(&context.capstone, last_instruction);
         let instruction_operands =
-            get_instruction_operand_values(&context.capstone, &last_instruction);
+            get_instruction_operand_values(&context.capstone, last_instruction);
 
         let str_size = match &instruction_registers[..] {
             // mov $..,%esi case
@@ -181,9 +181,9 @@ impl PanicMessageFinder for StdPanickingBeginPanicMessageFinder {
                 // Retrieve the previous instruction
                 let last_instruction = &instruction_iter.next_back()?;
                 let instruction_registers =
-                    get_instruction_operand_registers(&context.capstone, &last_instruction);
+                    get_instruction_operand_registers(&context.capstone, last_instruction);
                 let instruction_operands =
-                    get_instruction_operand_values(&context.capstone, &last_instruction);
+                    get_instruction_operand_values(&context.capstone, last_instruction);
 
                 // Check if this instruction matches `mov $.., %<source_reg_id>'
                 match &instruction_registers[..] {
@@ -226,7 +226,7 @@ fn get_instruction_operand_registers(
     capstone: &Capstone,
     instruction: &Insn,
 ) -> Vec<Option<RegId>> {
-    let insn_details = match capstone.insn_detail(&instruction) {
+    let insn_details = match capstone.insn_detail(instruction) {
         Ok(det) => det,
         _ => return vec![],
     };
@@ -251,7 +251,7 @@ fn get_instruction_operand_values(capstone: &Capstone, instruction: &Insn) -> Ve
     let instruction_size = instruction.bytes().len();
     let rip_value = instruction_address + instruction_size as u64;
 
-    let insn_details = match capstone.insn_detail(&instruction) {
+    let insn_details = match capstone.insn_detail(instruction) {
         Ok(det) => det,
         _ => return vec![],
     };

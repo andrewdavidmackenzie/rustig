@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 // (C) COPYRIGHT 2018 TECHNOLUTION BV, GOUDA NL
 
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -157,7 +158,7 @@ impl<MetaData, InlineFunctionMetaData> Display for Invocation<MetaData, InlineFu
             write!(
                 f,
                 "at {}",
-                match self.frames.iter().rev().next() {
+                match self.frames.iter().next_back() {
                     Some(frame) => frame.location.to_string(),
                     None => "unknown location".to_string(),
                 }
@@ -169,7 +170,7 @@ impl<MetaData, InlineFunctionMetaData> Display for Invocation<MetaData, InlineFu
 impl<MetaData: Debug, InlineFunctionFrameMetaData: Debug> Debug
     for Invocation<MetaData, InlineFunctionFrameMetaData>
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
             "Invocation {{ invocation_type: {:?}, frames: {:?}, attributes: {:x?} }}",
@@ -226,7 +227,7 @@ impl<'a, InlineFunctionFrameMetaData: Default> InlineFunctionFrame<InlineFunctio
                 Location::from,
             ),
             defining_crate: crate_utils::get_crate_for_inlined_functions(
-                &frame,
+                frame,
                 compilation_dirs,
                 rust_version,
             ),
@@ -258,8 +259,7 @@ impl<'a> From<&'a Addr2LineLocation> for Location {
                 .as_ref()
                 .and_then(|file_path| {
                     file_path
-                        .to_str()
-                        .and_then(|file_str| Some(file_str.to_string()))
+                        .to_str().map(|file_str| file_str.to_string())
                 })
                 .unwrap_or_else(|| "unknown_file".to_string()),
             // Copy location line
@@ -346,7 +346,7 @@ pub enum InvocationType {
 }
 
 pub fn read_file(callgraph_options: &CallGraphOptions) -> Result<Vec<u8>> {
-    let reader = binary_read::get_reader(&callgraph_options);
+    let reader = binary_read::get_reader(callgraph_options);
     reader.read(&callgraph_options.binary)
 }
 
@@ -385,10 +385,10 @@ pub fn build_call_graph<
     callgraph_options: &'a CallGraphOptions,
     file_content: &'a [u8],
 ) -> Result<(CallGraph<PMetadata, IMetadata, FMetadata>, Context<'a>)> {
-    let parser = parse::get_parser(&callgraph_options);
-    let context = parser.parse(&file_content)?;
+    let parser = parse::get_parser(callgraph_options);
+    let context = parser.parse(file_content)?;
 
-    let call_graph_builder = callgraph::get_call_graph_builder(&callgraph_options, &context)?;
+    let call_graph_builder = callgraph::get_call_graph_builder(callgraph_options, &context)?;
     let call_graph = call_graph_builder.build_call_graph(&context);
 
     check_debug_information(&call_graph)?;
@@ -496,7 +496,7 @@ mod test {
             size: 200,
             location: None,
             attributes: (),
-            disassembly: capstone::Capstone::new()
+            disassembly: Capstone::new()
                 .x86()
                 .mode(capstone::arch::x86::ArchMode::Mode64)
                 .build()
@@ -619,7 +619,7 @@ mod test {
         let procedure_bar = create_procedure_with_name("Bar".to_string());
         let procedure_baz = create_procedure_with_name("Baz".to_string());
 
-        let mut og = petgraph::stable_graph::StableGraph::new();
+        let mut og = StableGraph::new();
         og.add_node(Rc::new(RefCell::new(procedure_foo)));
         og.add_node(Rc::new(RefCell::new(procedure_bar)));
         og.add_node(Rc::new(RefCell::new(procedure_baz)));

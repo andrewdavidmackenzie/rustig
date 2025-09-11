@@ -35,8 +35,7 @@ impl PatternFinder for DirectPanicPatternFinder {
 
             let no_external_inline = invocation
                 .frames
-                .iter()
-                .next()
+                .first()
                 .expect("A invocation backtrace should contain at least one frame")
                 .attributes
                 .analysis_target

@@ -24,9 +24,9 @@ use gimli::RunTimeEndian;
 /// In that case, `Crate { name: "<crate-name>", version: Some("<version>") }` is returned.
 /// Some special cases are:
 ///   - When there is no numeric char after the crate name, it is assumed the version in not known.
-///         In that case, the `version` field is `None`.
+///     In that case, the `version` field is `None`.
 ///   - When the checkout dir is '/checkout/src/`, then it is stdlib code
-///         In that case `Crate { name: "stdlib", version: Some("<rust version>") }` is returned
+///     In that case `Crate { name: "stdlib", version: Some("<rust version>") }` is returned
 ///
 pub fn get_crate_from_comp_dir(comp_dir: Option<&str>, rust_version: String) -> Crate {
     let comp_dir = match comp_dir {
@@ -76,7 +76,7 @@ pub fn get_crate_details(
     compilation_unit_dirs: &[&str],
 ) -> Crate {
     let producer =
-        dwarf_utils::get_attr_string_value(&cu_die, gimli::DW_AT_producer, &ctx.dwarf_strings)
+        dwarf_utils::get_attr_string_value(cu_die, gimli::DW_AT_producer, &ctx.dwarf_strings)
             .expect("No producer for compilation unit");
 
     // Assume producer is in a format like 'clang LLVM (rustc version 1.26.0 (a77568041 2018-05-07))'
@@ -84,7 +84,6 @@ pub fn get_crate_details(
         .rsplit("rustc version")
         .next()
         .expect("Unexpected producer string format")
-        .trim()
         .split_whitespace()
         .next()
         .expect("Unexpected producer string format")
@@ -95,8 +94,7 @@ pub fn get_crate_details(
     let comp_dir = match defining_file {
         Some(defining_file) => compilation_unit_dirs
             .iter()
-            .find(|compilation_unit| defining_file.starts_with(**compilation_unit))
-            .map(|string| *string),
+            .find(|compilation_unit| defining_file.starts_with(**compilation_unit)).copied(),
         None => None,
     };
 

@@ -71,10 +71,7 @@ pub fn get_attr_buf<R: Reader>(
         .attr(attr)
         .map(|att_opt| att_opt.map(|att| att.value()))
     {
-        Ok(Some(value)) => match value {
-            Block(v) | Exprloc(Expression(v)) | String(v) => Some(v),
-            _ => None,
-        },
+        Ok(Some(Block(v) | Exprloc(Expression(v)) | String(v) )) => Some(v),
         _ => None,
     }
 }
@@ -124,8 +121,8 @@ pub fn print_entry_details<R: Reader>(
     strings: &DebugStr<R>,
 ) {
     let offset = entry.offset().0.into_u64();
-    let name = get_attr_string_value_safe(entry, gimli::DW_AT_name, &strings);
-    let linkage_name = get_attr_string_value_safe(entry, gimli::DW_AT_linkage_name, &strings);
+    let name = get_attr_string_value_safe(entry, gimli::DW_AT_name, strings);
+    let linkage_name = get_attr_string_value_safe(entry, gimli::DW_AT_linkage_name, strings);
 
     println!(
         "Entry details: offset: {:x}, name: {}, linkage_name: {}, present attributes:",
@@ -156,14 +153,13 @@ pub fn get_rust_version(ctx: &Context) -> Option<String> {
                 .expect("First compilation unit could not be selected")
                 .unwrap();
 
-            let producer = get_attr_string_value(&entry, gimli::DW_AT_producer, &ctx.dwarf_strings);
+            let producer = get_attr_string_value(entry, gimli::DW_AT_producer, &ctx.dwarf_strings);
 
             // Assume producer is in a format like 'clang LLVM (rustc version 1.26.0 (a77568041 2018-05-07))'
             producer.map(|p| {
                 p.rsplit("rustc version")
                     .next()
                     .expect("Unexpected producer string format")
-                    .trim()
                     .split_whitespace()
                     .next()
                     .expect("Unexpected producer string format")

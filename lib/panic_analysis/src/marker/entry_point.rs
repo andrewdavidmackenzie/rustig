@@ -34,7 +34,7 @@ impl CodeMarker for MainEntryCodeMarker {
             .map(Result::unwrap)
             .for_each(|unit| {
                 // Find entries in compilation unit
-                self.mark_entry_point(call_graph, &context, unit)
+                self.mark_entry_point(call_graph, context, unit)
             })
     }
     #[cfg(test)]
@@ -49,19 +49,18 @@ impl MainEntryCodeMarker {
         call_graph: &RustigCallGraph,
         context: &Context,
         unit: CompilationUnitHeader<EndianBuf<LittleEndian>>,
-    ) -> () {
+    ) {
         let abbrevs = unit.abbreviations(&context.dwarf_abbrev).unwrap();
         let mut entries = unit.entries(&abbrevs);
         // Iterate over the entries
         while let Some((_, entry)) = entries.next_dfs().unwrap() {
             // If we find an entry for a function that has DW_AT_main_subprogram set ot true
             // We mark the corresponding procedure as entry point.
-            if entry.tag() == gimli::DW_TAG_subprogram {
-                if let Some(gimli::AttributeValue::Flag(true)) =
+            if entry.tag() == gimli::DW_TAG_subprogram && let Some(gimli::AttributeValue::Flag(true)) =
                     entry.attr_value(gimli::DW_AT_main_subprogram).unwrap()
                 {
                     let start_address =
-                        dwarf_utils::get_attr_addr_value(&entry, gimli::DW_AT_low_pc)
+                        dwarf_utils::get_attr_addr_value(entry, gimli::DW_AT_low_pc)
                             .expect("No DW_AT_low_pc attribute found for function");
 
                     let node_index = call_graph.proc_index[&start_address];
@@ -71,7 +70,6 @@ impl MainEntryCodeMarker {
                         .entry_point
                         .replace(true);
                 }
-            }
         }
     }
 }

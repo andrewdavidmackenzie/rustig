@@ -32,16 +32,11 @@ use std::fmt::Formatter;
 
 use errors::Result;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum IntermediateBacktrace {
-    UpwardTrace(Vec<NodeIndex<u32>>),
+    #[default]
     NoTrace,
-}
-
-impl Default for IntermediateBacktrace {
-    fn default() -> IntermediateBacktrace {
-        IntermediateBacktrace::NoTrace
-    }
+    UpwardTrace(Vec<NodeIndex<u32>>),
 }
 
 impl IntermediateBacktrace {
@@ -322,16 +317,16 @@ pub type RustigCallGraph =
 /// * If the file is not a valid x86 or x86_64 ELF file.
 ///
 pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
-    let builder = binary::get_builder(&options)?;
+    let builder = binary::get_builder(options)?;
 
-    let markers = marker::get_code_markers(&options);
-    let filters = filter::get_node_filters(&options);
+    let markers = marker::get_code_markers(options);
+    let filters = filter::get_node_filters(options);
 
-    let panic_calls_finder = panic_calls::get_panic_call_finder(&options);
-    let pattern_finder = patterns::get_pattern_finder(&options);
+    let panic_calls_finder = panic_calls::get_panic_call_finder(options);
+    let pattern_finder = patterns::get_pattern_finder(options);
 
-    let graph_output_full = graph_output::get_graph_output_full(&options);
-    let graph_output_filtered = graph_output::get_graph_output_filtered(&options);
+    let graph_output_full = graph_output::get_graph_output_full(options);
+    let graph_output_filtered = graph_output::get_graph_output_filtered(options);
 
     // Build and parse binary
     let binary = builder.build()?;

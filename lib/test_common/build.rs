@@ -49,7 +49,7 @@ fn test_subject_dir(endpath: &str) -> PathBuf {
 }
 
 fn build_subjects(endpath: &str, fixed_cargo_version: Option<&str>) {
-    let subjects = test_subject_dir(&endpath);
+    let subjects = test_subject_dir(endpath);
     let subjects = subjects.to_str().unwrap();
     clean(subjects);
     build(subjects, fixed_cargo_version);
@@ -57,7 +57,7 @@ fn build_subjects(endpath: &str, fixed_cargo_version: Option<&str>) {
 
 fn clean(subjects: &str) {
     let subjects_clean_status = Command::new("cargo")
-        .current_dir(&subjects)
+        .current_dir(subjects)
         .arg("clean")
         .status()
         .expect("Cleaning test subject dir did not produce any output");
@@ -71,7 +71,7 @@ fn build(subjects: &str, fixed_cargo_version: Option<&str>) {
     BUILD_MODE_ARGS.iter().for_each(|arg| {
         let mut cargo = Command::new("cargo");
 
-        cargo.current_dir(&subjects);
+        cargo.current_dir(subjects);
 
         if let Some(ref version) = fixed_cargo_version {
             cargo.env("RUSTUP_TOOLCHAIN", version);

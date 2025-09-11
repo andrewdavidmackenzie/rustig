@@ -78,7 +78,7 @@ impl CodeMarker for EntryPointAnalysisTargetMarker {
             .collect::<Vec<_>>();
 
         // Use default implementation to mark all analysis target functions
-        DefaultPanicAnalysisTargetMarker { crates }.mark_code(&call_graph, &context)
+        DefaultPanicAnalysisTargetMarker { crates }.mark_code(call_graph, context)
     }
     #[cfg(test)]
     fn get_type_name(&self) -> &str {

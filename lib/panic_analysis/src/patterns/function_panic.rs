@@ -41,7 +41,7 @@ impl<'a> PatternFinder for FunctionPatternFinder<'a> {
                                 .map(|frame| frame.function_name.to_owned())
                                 .collect::<Vec<_>>()
                         })
-                        .unwrap_or_else(|| vec![]);
+                        .unwrap_or_default();
                     // Add procedure name
                     names.push(
                         bt_entry

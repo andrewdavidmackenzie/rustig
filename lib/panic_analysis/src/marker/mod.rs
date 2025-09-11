@@ -55,7 +55,6 @@ struct NullMarker;
 
 impl CodeMarker for NullMarker {
     fn mark_code(&self, _call_graph: &RustigCallGraph, _context: &Context) {
-        return;
     }
     #[cfg(test)]
     fn get_type_name(&self) -> &str {

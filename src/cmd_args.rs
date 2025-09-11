@@ -72,7 +72,7 @@ pub fn get_args() -> Result<(AnalysisOptions, OutputOptions)> {
 }
 
 fn get_app_definition<'a, 'b>() -> App<'a, 'b> {
-    App::new("Rust don't panic")
+    App::new("rustic - a checking tool for sources of panic in rust programs")
         // Argument accepting the path to the binary to analyze
         // Note that this is a parameter, since we might build from Cargo projects in the future
         // In that case this argument will not be required anymore.

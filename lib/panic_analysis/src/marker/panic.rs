@@ -42,7 +42,7 @@ impl CodeMarker for DefaultPanicMarker {
                     .attributes
                     .is_panic_origin
                     .set(true);
-                self.traverse_graph(index, &call_graph.graph);
+                DefaultPanicMarker::traverse_graph(index, &call_graph.graph);
             });
     }
     #[cfg(test)]
@@ -52,7 +52,7 @@ impl CodeMarker for DefaultPanicMarker {
 }
 
 impl DefaultPanicMarker {
-    fn traverse_graph(&self, index: NodeIndex<u32>, graph: &RustigGraph) {
+    fn traverse_graph(index: NodeIndex<u32>, graph: &RustigGraph) {
         let procedure = graph[index].borrow();
 
         // If function is whitelisted, ignore it
@@ -71,7 +71,7 @@ impl DefaultPanicMarker {
 
             // Check whether neighbor has been visited yet, if not visit it before we continue (DFS)
             if !neighbor.attributes.is_panic.get() {
-                self.traverse_graph(neighbor_idx, graph);
+                Self::traverse_graph(neighbor_idx, graph);
             }
         }
     }
@@ -159,12 +159,12 @@ mod test {
             false,
         );
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let panic = graph.add_node(Rc::new(RefCell::new(procedure_panic)));
         let non_panic = graph.add_node(Rc::new(RefCell::new(procedure_non_panic)));
 
         let call_graph = RustigCallGraph {
-            graph: graph,
+            graph,
             proc_index: HashMap::new(),
             call_index: HashMap::new(),
         };
@@ -206,7 +206,7 @@ mod test {
             false,
         );
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
         let baz = graph.add_node(Rc::new(RefCell::new(procedure_baz)));
@@ -225,7 +225,7 @@ mod test {
         graph.add_edge(baz, buz, invocation.clone());
 
         let call_graph = RustigCallGraph {
-            graph: graph,
+            graph,
             proc_index: HashMap::new(),
             call_index: HashMap::new(),
         };
@@ -256,7 +256,7 @@ mod test {
         let procedure_bar = create_procedure("Bar".to_string(), false, true, true);
         let procedure_baz = create_procedure("Baz".to_string(), false, false, true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
         let baz = graph.add_node(Rc::new(RefCell::new(procedure_baz)));
@@ -274,7 +274,7 @@ mod test {
 
         graph.add_edge(foo, baz, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(bar, &graph);
+        DefaultPanicMarker::traverse_graph(bar, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), true);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), true);
@@ -289,7 +289,7 @@ mod test {
         let procedure_baz = create_procedure("Baz".to_string(), false, false, true);
         let procedure_buz = create_procedure("Buz".to_string(), false, true, true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
 
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
@@ -310,7 +310,7 @@ mod test {
         graph.add_edge(baz, foo, invocation.clone());
         graph.add_edge(baz, buz, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(buz, &graph);
+        DefaultPanicMarker::traverse_graph(buz, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), true);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), true);
@@ -327,7 +327,7 @@ mod test {
         let procedure_buz = create_procedure("Buz".to_string(), false, true, false);
         procedure_baz.attributes.whitelisted.set(true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
 
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
@@ -348,7 +348,7 @@ mod test {
         graph.add_edge(baz, foo, invocation.clone());
         graph.add_edge(baz, buz, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(buz, &graph);
+        DefaultPanicMarker::traverse_graph(buz, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), false);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), false);
@@ -362,7 +362,7 @@ mod test {
         let procedure_foo = create_procedure("Foo".to_string(), true, false, true);
         let procedure_bar = create_procedure("Bar".to_string(), false, true, true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
 
@@ -378,7 +378,7 @@ mod test {
         graph.add_edge(foo, foo, invocation.clone());
         graph.add_edge(foo, bar, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(bar, &graph);
+        DefaultPanicMarker::traverse_graph(bar, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), true);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), true);
@@ -392,7 +392,7 @@ mod test {
         let procedure_baz = create_procedure("Baz".to_string(), false, false, true);
         let procedure_buz = create_procedure("Buz".to_string(), false, true, true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
         let baz = graph.add_node(Rc::new(RefCell::new(procedure_baz)));
@@ -412,7 +412,7 @@ mod test {
         graph.add_edge(bar, baz, invocation.clone());
         graph.add_edge(baz, buz, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(buz, &graph);
+        DefaultPanicMarker::traverse_graph(buz, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), true);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), true);
@@ -428,7 +428,7 @@ mod test {
         let procedure_baz = create_procedure("Baz".to_string(), false, true, true);
         let procedure_buz = create_procedure("Buz".to_string(), false, true, true);
 
-        let mut graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let mut graph = petgraph::stable_graph::StableGraph::new();
         let foo = graph.add_node(Rc::new(RefCell::new(procedure_foo)));
         let bar = graph.add_node(Rc::new(RefCell::new(procedure_bar)));
         let baz = graph.add_node(Rc::new(RefCell::new(procedure_baz)));
@@ -447,8 +447,8 @@ mod test {
         graph.add_edge(bar, baz, invocation.clone());
         graph.add_edge(foo, buz, invocation.clone());
 
-        DefaultPanicMarker.traverse_graph(baz, &graph);
-        DefaultPanicMarker.traverse_graph(buz, &graph);
+        DefaultPanicMarker::traverse_graph(baz, &graph);
+        DefaultPanicMarker::traverse_graph(buz, &graph);
 
         assert_eq!(graph[foo].borrow().attributes.is_panic.get(), true);
         assert_eq!(graph[bar].borrow().attributes.is_panic.get(), true);
