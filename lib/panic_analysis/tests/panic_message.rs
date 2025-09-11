@@ -8,11 +8,8 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::*;
-    use self::test_common::*;
+    use panic_analysis::*;
+    use test_common::*;
 
     /// Test if we can retrieve a message on a call to `core::panicking::panic` in debug builds.
     /// Since the `panic!` macro in code without `#![no_std]` will use `std::panicking::begin_panic`, we use 'unwrap' here.

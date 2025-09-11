@@ -11,16 +11,16 @@ mod entry_point;
 mod function_whitelist;
 mod panic;
 
-use AnalysisOptions;
-use RustigCallGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
 use std::fmt::Debug;
 
-use marker::analysis_target::get_panic_analysis_target_marker;
-use marker::entry_point::get_entry_points_marker;
-use marker::panic::get_panic_marker;
+use crate::marker::analysis_target::get_panic_analysis_target_marker;
+use crate::marker::entry_point::get_entry_points_marker;
+use crate::marker::panic::get_panic_marker;
 
 pub trait CodeMarker: Debug {
     fn mark_code(&self, call_graph: &RustigCallGraph, context: &Context);
@@ -31,7 +31,7 @@ pub trait CodeMarker: Debug {
 /// Combination of multiple `CodeMarker` implementations.
 #[derive(Debug)]
 struct CombinedCodeMarker {
-    markers: Vec<Box<CodeMarker>>,
+    markers: Vec<Box<dyn CodeMarker>>,
 }
 
 impl CodeMarker for CombinedCodeMarker {
@@ -63,7 +63,7 @@ impl CodeMarker for NullMarker {
     }
 }
 
-pub fn get_code_markers(options: &AnalysisOptions) -> Box<CodeMarker> {
+pub fn get_code_markers(options: &AnalysisOptions) -> Box<dyn CodeMarker> {
     let panic_analysis_target_marker = get_panic_analysis_target_marker(options);
     let main_code_marker = get_entry_points_marker(options);
     let panic_marker = get_panic_marker(options);
@@ -84,13 +84,6 @@ pub fn get_code_markers(options: &AnalysisOptions) -> Box<CodeMarker> {
 
 #[cfg(test)]
 mod test {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate std;
-    extern crate test_common;
-
     use super::*;
 
     use std::cell::Cell;
@@ -98,7 +91,7 @@ mod test {
 
     use std::rc::Rc;
 
-    use test_utils;
+    use crate::test_utils;
 
     #[derive(Debug)]
     struct FakeCodeMarker {
@@ -134,7 +127,7 @@ mod test {
         let cell2_rc = cell2.clone();
         let marker2 = Box::new(FakeCodeMarker { called: cell2 });
 
-        let markers: Vec<Box<CodeMarker>> = vec![marker1, marker2];
+        let markers: Vec<Box<dyn CodeMarker>> = vec![marker1, marker2];
         let all_markers = CombinedCodeMarker { markers };
 
         let file_content = &test_common::load_test_binary_as_bytes(

@@ -8,6 +8,7 @@ authors = [
     "Aron Zwaan <aronzwaan@gmail.com>",
     "Erwin Gribnau <erwin.gribnau@technolution.nl>"
 ]
+edition = "2024"
 
 [dependencies]
 test_subjects_lib = {path = "../../test_subjects_lib/"}

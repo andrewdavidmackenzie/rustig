@@ -7,13 +7,13 @@
 // except according to those terms.
 
 use callgraph::Binary;
-use errors::*;
+use crate::errors::*;
 use std::path::Path;
-use AnalysisOptions;
+use crate::AnalysisOptions;
 
 /// Trait marking objects that are able to make sure there is a binary to analyze
 pub trait BinaryBuilder {
-    fn build(&self) -> Result<Binary>;
+    fn build(&self) -> Result<Binary<'_>>;
 }
 
 /// Implementation of BinaryBuilder that consumes a pre-existing binary
@@ -23,7 +23,7 @@ struct ExistingBinaryBuilder {
 }
 
 impl BinaryBuilder for ExistingBinaryBuilder {
-    fn build(&self) -> Result<Binary> {
+    fn build(&self) -> Result<Binary<'_>> {
         let path = Path::new(&self.path);
         if path.exists() {
             Ok(Binary { path })
@@ -34,7 +34,7 @@ impl BinaryBuilder for ExistingBinaryBuilder {
 }
 
 /// Function providing a correct implementation of BinaryBuilder, based on the provided options
-pub fn get_builder(options: &AnalysisOptions) -> Result<Box<BinaryBuilder>> {
+pub fn get_builder(options: &AnalysisOptions) -> Result<Box<dyn BinaryBuilder>> {
     let path = options
         .binary_path
         .clone()
@@ -44,11 +44,8 @@ pub fn get_builder(options: &AnalysisOptions) -> Result<Box<BinaryBuilder>> {
 
 #[cfg(test)]
 mod test {
-    extern crate std;
-    extern crate test_common;
-
-    use self::test_common::TestSubjectType;
-    use binary::*;
+    use test_common::TestSubjectType;
+    use crate::binary::*;
 
     /// Test that a file exists at the given binary path
     #[test]

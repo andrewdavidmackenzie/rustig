@@ -9,7 +9,6 @@
 struct Calls;
 
 trait TraitCalls {
-    #[inline(never)]
     fn trait_call_with_self(&self);
 }
 
@@ -21,7 +20,7 @@ impl TraitCalls for Calls {
 }
 
 #[inline(never)]
-fn ret_trait_box() -> Box<TraitCalls> {
+fn ret_trait_box() -> Box<dyn TraitCalls> {
     Box::new(Calls {})
 }
 

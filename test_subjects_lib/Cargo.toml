@@ -9,4 +9,7 @@ authors = [
     "Erwin Gribnau <erwin.gribnau@technolution.nl>"
 ]
 
+[workspace.package]
+edition = "2024"
+
 [dependencies]

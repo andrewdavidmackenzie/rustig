@@ -7,12 +7,12 @@
 // except according to those terms.
 
 use callgraph::Context;
-use patterns::PatternFinder;
+use crate::patterns::PatternFinder;
 use std::collections::HashMap;
-use AnalysisOptions;
-use PanicCallsCollection;
-use PanicPattern;
-use PanicPattern::Arithmetic;
+use crate::AnalysisOptions;
+use crate::PanicCallsCollection;
+use crate::PanicPattern;
+use crate::PanicPattern::Arithmetic;
 
 /// Implementation of the `PatternFinder` to categorize panic traces based on messages
 struct MessagePatternFinder<'a> {
@@ -34,7 +34,7 @@ impl<'a> PatternFinder for MessagePatternFinder<'a> {
     }
 }
 
-pub fn get_messages_pattern_finder(_options: &AnalysisOptions) -> Box<PatternFinder> {
+pub fn get_messages_pattern_finder(_options: &AnalysisOptions) -> Box<dyn PatternFinder> {
     let mut messages_map = HashMap::new();
     messages_map.insert("attempt to add with overflow", Arithmetic);
     messages_map.insert("attempt to subtract with overflow", Arithmetic);
@@ -61,18 +61,16 @@ pub fn get_messages_pattern_finder(_options: &AnalysisOptions) -> Box<PatternFin
 
 #[cfg(test)]
 mod test {
-    extern crate test_common;
-
-    use self::test_common::*;
+    use test_common::*;
     use super::*;
 
-    use PanicCall;
+    use crate::PanicCall;
     use PanicPattern::Indexing;
     use PanicPattern::Unrecognized;
 
     use std::cell::RefCell;
 
-    use test_utils::*;
+    use crate::test_utils::*;
 
     /// Test if a `PanicCall` is marked correctly if its message is in `message_pattern_mapping`.
     #[test]

@@ -6,21 +6,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate clap;
-extern crate panic_analysis;
-extern crate std;
+use crate::config_file::parse_config;
+use crate::errors::*;
 
-use config_file::parse_config;
-use errors::*;
+use panic_analysis::AnalysisOptions;
 
-use self::panic_analysis::AnalysisOptions;
+use clap::App;
+use clap::Arg;
+use clap::ArgMatches;
+use clap::ErrorKind;
 
-use self::clap::App;
-use self::clap::Arg;
-use self::clap::ArgMatches;
-use self::clap::ErrorKind;
-
-use output::OutputOptions;
+use crate::output::OutputOptions;
 
 use std::option::Option::Some;
 

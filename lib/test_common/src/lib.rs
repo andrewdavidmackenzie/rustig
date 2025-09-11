@@ -6,10 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate capstone;
-extern crate gimli;
-extern crate object;
-
 use std::fs::File;
 use std::io::Error;
 use std::io::Read;

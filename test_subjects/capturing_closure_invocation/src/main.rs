@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-fn invoke_clos(func: Box<Fn() -> ()>) {
+fn invoke_clos(func: Box<dyn Fn() -> ()>) {
     func();
 }
 

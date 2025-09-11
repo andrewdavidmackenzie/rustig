@@ -8,11 +8,8 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::*;
-    use self::test_common::*;
+    use panic_analysis::*;
+    use test_common::*;
 
     /// In this integration test we look at the 'unwrap' test subject
     /// This library has a dependency on test_subjects_lib::unwrap, which does calls to `Option::unwrap()`, `Option::expect`, `Result::unwrap()` and a direct panic call

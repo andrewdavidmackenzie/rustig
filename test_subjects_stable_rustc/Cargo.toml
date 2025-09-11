@@ -5,5 +5,8 @@ members = [
     "threads",
 ]
 
+[workspace.package]
+edition = "2024"
+
 [profile.release]
 debug = true

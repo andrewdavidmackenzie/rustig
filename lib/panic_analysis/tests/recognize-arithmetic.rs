@@ -8,13 +8,10 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::PanicPattern::Arithmetic;
-    use self::panic_analysis::*;
-    use self::test_common::TestSubjectType::*;
-    use self::test_common::*;
+    use panic_analysis::PanicPattern::Arithmetic;
+    use panic_analysis::*;
+    use test_common::TestSubjectType::*;
+    use test_common::*;
 
     /// helper method that checks if a trace through function `function_name`, exists in the test subject "arithmetic" on type `subject_type`.
     /// It is asserted that the trace has `expected_message` as message as well.

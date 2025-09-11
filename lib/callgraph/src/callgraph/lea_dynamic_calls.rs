@@ -6,19 +6,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate byteorder;
-extern crate capstone;
-
-use Context;
-use InlineFunctionFrame;
-use Invocation;
-use InvocationType;
-use Procedure;
+use crate::Context;
+use crate::InlineFunctionFrame;
+use crate::Invocation;
+use crate::InvocationType;
+use crate::Procedure;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use callgraph::fallible_iterator::FallibleIterator;
-use callgraph::InvocationFinder;
+use crate::callgraph::FallibleIterator;
+use crate::callgraph::InvocationFinder;
 
 use capstone::arch::x86::X86OpMem;
 use capstone::arch::x86::X86OperandType;
@@ -36,7 +33,7 @@ use std::io::Cursor;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use callgraph::CompilationInfo;
+use crate::callgraph::CompilationInfo;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::stable_graph::StableGraph;
 use std::collections::HashMap;
@@ -437,16 +434,10 @@ impl<P, I: Default, F: Default> InvocationFinder<P, I, F>
 
 #[cfg(test)]
 pub mod tests {
-    extern crate capstone;
-    extern crate elf;
-    extern crate gimli;
-    extern crate object;
-    extern crate test_common;
-
     use super::*;
 
     use Context;
-    use Crate;
+    use crate::Crate;
 
     use addr2line::demangle;
     use addr2line::Context as Addr2LineContext;

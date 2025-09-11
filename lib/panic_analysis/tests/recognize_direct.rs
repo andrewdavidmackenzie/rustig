@@ -8,9 +8,6 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
     use self::panic_analysis::*;
     use self::test_common::*;
 

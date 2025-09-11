@@ -6,24 +6,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use callgraph::byteorder::{LittleEndian, ReadBytesExt};
-use callgraph::capstone::arch::x86::*;
-use callgraph::capstone::arch::DetailsArchInsn;
-use callgraph::capstone::Capstone;
-use callgraph::capstone::Insn;
-use callgraph::capstone::InsnId;
-use callgraph::capstone::RegId;
-use callgraph::object::Object;
-use callgraph::object::ObjectSection;
+use byteorder::{LittleEndian, ReadBytesExt};
+
+use capstone::{Capstone, Insn, InsnId, RegId};
+use capstone::arch::x86::{X86OpMem, X86OperandType};
+
+use object::Object;
+use object::ObjectSection;
 
 use callgraph::Context;
 
-use std::io::Cursor;
+use std::io::{Cursor};
 use std::str::from_utf8;
-
-use AnalysisOptions;
-use BackTraceEntry;
-use RustigCallGraph;
+use capstone::arch::DetailsArchInsn;
+use crate::AnalysisOptions;
+use crate::BackTraceEntry;
+use crate::RustigCallGraph;
 
 static REG_ID_RDI: RegId = RegId(39);
 static REG_ID_ESI: RegId = RegId(29);
@@ -336,7 +334,7 @@ fn get_bytes_at_address<'a>(context: &Context<'a>, address: u64, size: u64) -> O
 }
 
 /// Get vector of objects that can try to retrieve panic messages
-pub fn get_panic_message_finders(_options: &AnalysisOptions) -> Vec<Box<PanicMessageFinder>> {
+pub fn get_panic_message_finders(_options: &AnalysisOptions) -> Vec<Box<dyn PanicMessageFinder>> {
     vec![
         Box::new(CorePanickingPanicMessageFinder),
         Box::new(StdPanickingBeginPanicMessageFinder {

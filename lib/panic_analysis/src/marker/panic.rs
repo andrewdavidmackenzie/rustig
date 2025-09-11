@@ -6,15 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use AnalysisOptions;
-use RustigCallGraph;
-use RustigGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
+use crate::RustigGraph;
 
-use callgraph::petgraph::prelude::NodeIndex;
-use callgraph::petgraph::Incoming;
+use petgraph::prelude::NodeIndex;
+use petgraph::Incoming;
 use callgraph::Context;
 
-use marker::CodeMarker;
+use crate::marker::CodeMarker;
 
 static PANIC_HANDLERS: &[&str] = &[
     "std::panicking::begin_panic",
@@ -77,21 +77,15 @@ impl DefaultPanicMarker {
     }
 }
 
-pub fn get_panic_marker(_options: &AnalysisOptions) -> Box<CodeMarker> {
+pub fn get_panic_marker(_options: &AnalysisOptions) -> Box<dyn CodeMarker> {
     Box::new(DefaultPanicMarker)
 }
 
 #[cfg(test)]
 mod test {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate test_common;
-
     use super::*;
 
-    use self::capstone::arch::BuildsCapstone;
+    use capstone::arch::BuildsCapstone;
 
     use callgraph::Crate;
     use callgraph::InvocationType::Direct;
@@ -103,11 +97,11 @@ mod test {
     use std::rc::Rc;
 
     use callgraph::Invocation;
-    use IntermediateBacktrace::NoTrace;
-    use RDPInvocationMetaData;
-    use RDPProcedureMetaData;
+    use crate::IntermediateBacktrace::NoTrace;
+    use crate::RDPInvocationMetaData;
+    use crate::RDPProcedureMetaData;
 
-    use test_utils;
+    use crate::test_utils;
 
     /// Helper method for creating procedures
     fn create_procedure(

@@ -6,18 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate callgraph;
-extern crate fallible_iterator;
-extern crate gimli;
-
-use AnalysisOptions;
-use RustigCallGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
-use self::fallible_iterator::FallibleIterator;
+use fallible_iterator::FallibleIterator;
 
-use marker::CodeMarker;
+use crate::marker::CodeMarker;
 
 use callgraph::dwarf_utils;
 
@@ -80,20 +76,14 @@ impl MainEntryCodeMarker {
     }
 }
 
-pub fn get_entry_points_marker(_options: &AnalysisOptions) -> Box<CodeMarker> {
+pub fn get_entry_points_marker(_options: &AnalysisOptions) -> Box<dyn CodeMarker> {
     Box::new(MainEntryCodeMarker)
 }
 
 #[cfg(test)]
 mod test {
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate std;
-    extern crate test_common;
-
-    use self::capstone::arch::BuildsCapstone;
-    use self::capstone::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::Capstone;
 
     use super::*;
 
@@ -107,9 +97,10 @@ mod test {
     use std::collections::HashMap;
     use std::rc::Rc;
 
-    use IntermediateBacktrace::NoTrace;
+    use crate::IntermediateBacktrace::NoTrace;
 
-    use test_utils;
+    use crate::test_utils;
+    use crate::RDPProcedureMetaData;
 
     /// Helper function to create a procedure with a given name, crate name and address
     fn create_procedure_with_name(

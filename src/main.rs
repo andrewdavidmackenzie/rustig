@@ -13,31 +13,11 @@
 
 #![recursion_limit="128"]
 
-#[macro_use]
-extern crate serde_derive;
-extern crate panic_analysis;
-extern crate toml;
-#[macro_use]
-extern crate error_chain;
-#[macro_use]
-extern crate serde_json;
-
 mod cmd_args;
 mod config_file;
 mod output;
 
-// AZ: error_chain uses #[allow(unused_doc_comment)], which has been rename to #[allow(unused_doc_comments)]
-#[allow(renamed_and_removed_lints)]
-pub mod errors {
-    error_chain!{
-        errors{
-            ConfigLoad(path: String, reason: Option<String>) {
-                description("Config file not found")
-                display("Unable to read config file `{}`{}", path, reason.as_ref().map(|x| format!(": {}", x)).unwrap_or_else(|| "".to_string()))
-            }
-        }
-    }
-}
+pub mod errors;
 
 use std::process;
 use std::result::Result::Ok;

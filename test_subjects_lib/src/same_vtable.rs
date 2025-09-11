@@ -7,16 +7,13 @@
 // except according to those terms.
 
 trait Call {
-    #[inline(never)]
     fn maybe_panic(&self);
-
-    #[inline(never)]
     fn maybe_panic2(&self);
 }
 
-struct S1;
-struct S2 {
-    s1: S1,
+pub struct S1;
+pub struct S2 {
+    pub s1: S1,
 }
 
 impl Call for S1 {
@@ -32,7 +29,7 @@ impl Call for S1 {
 #[inline(never)]
 pub fn maybe_panic() {
     let s1 = S1{};
-    let s = &s1 as &Call;
+    let s = &s1 as &dyn Call;
     s.maybe_panic2();
 }
 
@@ -40,6 +37,6 @@ pub fn maybe_panic() {
 #[inline(never)]
 pub fn maybe_panic2() {
     let s1 = S1{};
-    let s = &s1 as &Call;
+    let s = &s1 as &dyn Call;
     s.maybe_panic();
 }

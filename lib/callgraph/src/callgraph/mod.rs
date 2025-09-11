@@ -6,21 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate addr2line;
-extern crate fallible_iterator;
-extern crate gimli;
-extern crate object;
-extern crate petgraph;
-
 mod lea_dynamic_calls;
 mod static_calls;
 
-use CallGraph;
-use CallGraphOptions;
-use Context;
-use Invocation;
-use Location;
-use Procedure;
+use crate::CallGraph;
+use crate::CallGraphOptions;
+use crate::Context;
+use crate::Invocation;
+use crate::Location;
+use crate::Procedure;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -29,9 +23,9 @@ use std::string::String;
 
 use capstone::*;
 
-use self::fallible_iterator::FallibleIterator;
+use fallible_iterator::FallibleIterator;
 
-use errors::*;
+use crate::errors::*;
 
 use gimli::AttributeValue;
 use gimli::CompilationUnitHeader;
@@ -51,8 +45,8 @@ use object::ObjectSection;
 
 use petgraph::stable_graph::{NodeIndex, StableGraph};
 
-use crate_utils;
-use dwarf_utils;
+use crate::crate_utils;
+use crate::dwarf_utils;
 use std::marker::PhantomData;
 
 pub struct CompilationInfo<'a> {
@@ -78,7 +72,7 @@ pub trait CallGraphBuilder<PMetadata: Default, IMetadata: Default, FMetadata> {
 
 /// Struct able to build a callgraph from an x86 binary
 struct X86CallGraphBuilder<P, I, F> {
-    invocation_finders: Vec<Box<InvocationFinder<P, I, F>>>,
+    invocation_finders: Vec<Box<dyn InvocationFinder<P, I, F>>>,
 }
 
 /// Struct abstracting the machine code for a procedure.
@@ -468,7 +462,7 @@ pub fn get_call_graph_builder<
 >(
     _options: &CallGraphOptions,
     ctx: &Context,
-) -> Result<Box<CallGraphBuilder<PMetadata, IMetadata, FMetadata>>> {
+) -> Result<Box<dyn CallGraphBuilder<PMetadata, IMetadata, FMetadata>>> {
     match ctx.elf.machine() {
         object::Machine::X86 | object::Machine::X86_64 => Ok(Box::new(X86CallGraphBuilder {
             invocation_finders: vec![
@@ -489,18 +483,12 @@ pub fn get_call_graph_builder<
 
 #[cfg(test)]
 mod test {
-    extern crate capstone;
-    extern crate elf;
-    extern crate gimli;
-    extern crate object;
-    extern crate test_common;
-
     use super::*;
 
     use gimli::*;
 
     use Context;
-    use InvocationType;
+    use crate::InvocationType;
 
     use addr2line::Context as Addr2LineContext;
 

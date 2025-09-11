@@ -8,10 +8,10 @@
 
 use addr2line::Frame;
 
-use dwarf_utils;
+use crate::dwarf_utils;
 
-use Context;
-use Crate;
+use crate::Context;
+use crate::Crate;
 
 use gimli;
 use gimli::DebuggingInformationEntry;

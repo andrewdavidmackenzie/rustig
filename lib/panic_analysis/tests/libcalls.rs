@@ -8,11 +8,8 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::AnalysisOptions;
-    use self::test_common::TestSubjectType;
+    use panic_analysis::AnalysisOptions;
+    use test_common::TestSubjectType;
 
     static ANALYZED_TEST_SUBJECT: &str = "lib_calls";
 

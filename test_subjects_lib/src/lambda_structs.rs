@@ -14,7 +14,6 @@ where
 }
 
 trait TraitCallsWithFn {
-    #[inline(never)]
     fn call_inner_lambda(&self);
 }
 
@@ -47,7 +46,7 @@ pub fn lambda_call() {
 #[inline(never)]
 pub fn lambda_struct_as_trait_call() {
     let lambda = ret_lambda();
-    let panic_lambda_struct_as_trait: Box<TraitCallsWithFn> =
+    let panic_lambda_struct_as_trait: Box<dyn TraitCallsWithFn> =
         Box::new(CallsWithFn { lambda: &lambda });
     panic_lambda_struct_as_trait.call_inner_lambda();
 }

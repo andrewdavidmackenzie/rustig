@@ -9,16 +9,12 @@
 struct Calls;
 
 trait SimilarTraitCalls {
-    #[inline(never)]
     fn trait_call_dup();
-    #[inline(never)]
     fn trait_call_with_self_dup(&self);
 }
 
 trait SimilarTraitCalls2 {
-    #[inline(never)]
     fn trait_call_dup();
-    #[inline(never)]
     fn trait_call_with_self_dup(&self);
 }
 

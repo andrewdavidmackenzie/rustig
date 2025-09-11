@@ -7,16 +7,16 @@
 // except according to those terms.
 
 use callgraph::Context;
-use patterns::PatternFinder;
+use crate::patterns::PatternFinder;
 
-use AnalysisOptions;
+use crate::AnalysisOptions;
 
 use std::collections::HashMap;
 
-use PanicCallsCollection;
-use PanicPattern;
-use PanicPattern::Indexing;
-use PanicPattern::Unwrap;
+use crate::PanicCallsCollection;
+use crate::PanicPattern;
+use crate::PanicPattern::Indexing;
+use crate::PanicPattern::Unwrap;
 
 /// Implementation of the `PatternFinder` to find unwrap calls causing a panic.
 struct FunctionPatternFinder<'a> {
@@ -64,7 +64,7 @@ impl<'a> PatternFinder for FunctionPatternFinder<'a> {
     }
 }
 
-pub fn get_function_names_pattern_finder(_options: &AnalysisOptions) -> Box<PatternFinder> {
+pub fn get_function_names_pattern_finder(_options: &AnalysisOptions) -> Box<dyn PatternFinder> {
     let mut function_map = HashMap::new();
     function_map.insert("::unwrap", Unwrap);
     function_map.insert("::expect", Unwrap);
@@ -76,21 +76,17 @@ pub fn get_function_names_pattern_finder(_options: &AnalysisOptions) -> Box<Patt
 
 #[cfg(test)]
 mod tests {
-    extern crate capstone;
-    extern crate test_common;
-
-    use self::capstone::arch::BuildsCapstone;
-
-    use self::test_common::*;
+    use capstone::arch::BuildsCapstone;
+    use test_common::*;
     use super::*;
 
-    use BackTraceEntry;
-    use IntermediateBacktrace::NoTrace;
+    use crate::BackTraceEntry;
+    use crate::IntermediateBacktrace::NoTrace;
 
-    use PanicCall;
+    use crate::PanicCall;
     use PanicPattern;
-    use RDPInvocationMetaData;
-    use RDPProcedureMetaData;
+    use crate::RDPInvocationMetaData;
+    use crate::RDPProcedureMetaData;
 
     use callgraph::Crate;
     use callgraph::Invocation;
@@ -103,7 +99,7 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use test_utils::*;
+    use crate::test_utils::*;
 
     /// Helper method for creating a vector of procedures
     fn create_proc_vec(proc_info_slice: &[(&str, &str, &[(&str)])]) -> Vec<BackTraceEntry> {

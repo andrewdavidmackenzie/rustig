@@ -9,12 +9,10 @@
 struct Calls;
 
 trait TraitCallsWithReceiver {
-    #[inline(never)]
     fn call_with_self(&self);
 }
 
-trait TraitCallsWithReceiverDup {
-    #[inline(never)]
+pub trait TraitCallsWithReceiverDup {
     fn call_with_self(&self);
 }
 
@@ -41,13 +39,13 @@ impl Calls {
 
 #[inline(never)]
 pub fn dynamic_call() {
-    let call: &TraitCallsWithReceiver = &Calls;
+    let call: &dyn TraitCallsWithReceiver = &Calls;
     call.call_with_self();
 }
 
 #[inline(never)]
 pub fn dynamic_call_2() {
-    let call: &TraitCallsWithReceiver = &Calls;
+    let call: &dyn TraitCallsWithReceiver = &Calls;
     TraitCallsWithReceiver::call_with_self(call);
 }
 

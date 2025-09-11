@@ -9,7 +9,6 @@
 struct Calls;
 
 trait TraitCalls {
-    #[inline(never)]
     fn trait_call_with_self(&self);
 }
 

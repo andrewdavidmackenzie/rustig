@@ -6,22 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub extern crate addr2line;
-pub extern crate byteorder;
-pub extern crate capstone;
-extern crate core;
-pub extern crate gimli;
-pub extern crate object;
-pub extern crate petgraph;
-#[macro_use]
-extern crate error_chain;
-
 mod binary_read;
 mod callgraph;
 pub mod crate_utils;
 pub mod dwarf_utils;
 mod parse;
-use errors::*;
+
+pub mod errors;
+
+use crate::errors::*;
 
 use addr2line::Context as Addr2LineContext;
 use addr2line::Frame as Addr2LineFrame;
@@ -309,7 +302,7 @@ impl<PMetadata: Debug, IMetadata: Debug, FMetadata: Debug>
     /// Return dot representation of the graph
     pub fn dot(
         &self,
-    ) -> Dot<
+    ) -> Dot<'_,
         &StableGraph<
             Rc<RefCell<Procedure<PMetadata>>>,
             Rc<RefCell<Invocation<IMetadata, FMetadata>>>,
@@ -403,35 +396,8 @@ pub fn build_call_graph<
     Ok((call_graph, context))
 }
 
-// AZ: error_chain uses #[allow(unused_doc_comment)], which has been rename to #[allow(unused_doc_comments)]
-#[allow(renamed_and_removed_lints)]
-pub mod errors {
-    error_chain!{
-        errors{
-            NotSupported(functionality: String) {
-                    description("A binary was passed that requires unimplemented functionality.")
-                    display("Analysis aborted: binary contains {}, which is not supported. ", functionality)
-            }
-            ParseError(reason: String) {
-                    description("A file could not be parsed correctly.")
-                    display("Unable to parse file: {}", reason)
-            }
-            ReadError(path: String) {
-                    description("A file could not be read correctly.")
-                    display("Unable to read file `{}`", path)
-            }
-            IOError(path: String) {
-                    description("Binary file not found.")
-                    display("File not found `{}`", path)
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
-    extern crate capstone;
-
     use super::*;
 
     use std::cell::RefCell;

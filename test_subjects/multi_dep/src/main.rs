@@ -26,8 +26,7 @@ fn bar() {
 #[inline(never)]
 fn baz() {
     use d1::*;
-    use log::*;
 
-    let logger = TermLogger::new(LevelFilter::Info, Config::default());
+    let _logger = TermLogger::new(LevelFilter::Info, Config::default());
     dep::baz();
 }

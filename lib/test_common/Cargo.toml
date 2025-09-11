@@ -1,13 +1,12 @@
 [package]
 name = "test_common"
-version = "0.1.0"
-authors = [
-    "Bart van Schaick <bvschaick@gmail.com>",
-    "Dominique van Cuilenborg <d.vancuilenborg@hotmail.com>",
-    "Fabian Stelmach <fabianstelmach@gmail.com>",
-    "Aron Zwaan <aronzwaan@gmail.com>",
-    "Erwin Gribnau <erwin.gribnau@technolution.nl>"
-]
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+documentation.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 gimli = "0.15.0"

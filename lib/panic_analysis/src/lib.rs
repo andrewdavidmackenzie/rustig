@@ -12,29 +12,25 @@ mod graph_output;
 mod marker;
 mod panic_calls;
 mod patterns;
+pub mod errors;
 
 #[cfg(test)]
 pub mod test_utils;
 
-extern crate callgraph;
-
-#[macro_use]
-extern crate error_chain;
-
-extern crate gimli;
-
 use callgraph::*;
 
-use callgraph::petgraph::prelude::NodeIndex;
-use callgraph::petgraph::stable_graph::StableGraph;
+use petgraph::stable_graph::NodeIndex;
+use petgraph::stable_graph::StableGraph;
+
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use errors::*;
 use std::fmt;
 use std::fmt::Display;
 use std::fmt::Formatter;
+
+use errors::Result;
 
 #[derive(Debug, Clone)]
 pub enum IntermediateBacktrace {
@@ -73,10 +69,10 @@ impl FunctionWhitelistCrateVersion {
     fn matches_version(&self, version: &Option<String>) -> bool {
         match self {
             &FunctionWhitelistCrateVersion::None => true,
-            FunctionWhitelistCrateVersion::Strict(ref self_version) => {
+            FunctionWhitelistCrateVersion::Strict(self_version) => {
                 version.as_ref().map(|v| self_version == v).unwrap_or(false)
             }
-            FunctionWhitelistCrateVersion::Loose(ref self_version) => {
+            FunctionWhitelistCrateVersion::Loose(self_version) => {
                 version.as_ref().map(|v| self_version == v).unwrap_or(true)
             }
         }
@@ -342,9 +338,9 @@ pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
 
     // Create callgraph
     let cg_options = CallGraphOptions { binary };
-    let file_content = &callgraph::read_file(&cg_options)?;
+    let file_content = &read_file(&cg_options)?;
     let (mut call_graph, context): (RustigCallGraph, Context) =
-        callgraph::build_call_graph(&cg_options, file_content)?;
+        build_call_graph(&cg_options, file_content)?;
 
     graph_output_full.write_graph(&call_graph);
 
@@ -362,32 +358,13 @@ pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
     Ok(panic_calls)
 }
 
-// AZ: error_chain uses #[allow(unused_doc_comment)], which has been rename to #[allow(unused_doc_comments)]
-#[allow(renamed_and_removed_lints)]
-pub mod errors {
-    error_chain!{
-        links {
-            CallGraph(::callgraph::errors::Error, ::callgraph::errors::ErrorKind);
-        }
-
-        errors {
-            IOError(path: String) {
-                        description("Binary file not found.")
-                        display("File not found `{}`", path)
-                }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    extern crate capstone;
-
     use super::*;
     use callgraph::InlineFunctionFrame;
     use callgraph::Procedure;
-    use tests::capstone::arch::BuildsCapstone;
-    use tests::capstone::prelude::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::prelude::Capstone;
     use RDPProcedureMetaData;
 
     /// Test implementation `Display` trait for `BacktraceEntry` without outgoing invocation
@@ -406,7 +383,7 @@ mod tests {
                 size: 0x40,
                 location: None,
                 attributes: RDPProcedureMetaData::default(),
-                disassembly: capstone::Capstone::new()
+                disassembly: Capstone::new()
                     .x86()
                     .mode(capstone::arch::x86::ArchMode::Mode64)
                     .build()
@@ -439,7 +416,7 @@ mod tests {
                 size: 0x40,
                 location: None,
                 attributes: RDPProcedureMetaData::default(),
-                disassembly: capstone::Capstone::new()
+                disassembly: Capstone::new()
                     .x86()
                     .mode(capstone::arch::x86::ArchMode::Mode64)
                     .build()

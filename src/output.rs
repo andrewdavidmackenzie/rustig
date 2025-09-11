@@ -48,19 +48,15 @@
 //! ### 3. JSON.
 //! The same amount of information as verbose, but formatted as JSON.
 //! ```
-extern crate callgraph;
-extern crate panic_analysis;
-extern crate serde_json;
 
-use panic_analysis::PanicCallsCollection;
-use panic_analysis::PanicPattern;
+use std::cell::RefCell;
+use panic_analysis::{PanicCallsCollection, PanicPattern};
 use serde_json as json;
 use std::io;
-use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::ops::Deref;
 use std::io::Write;
+use std::ops::Deref;
+use std::rc::Rc;
+use serde_json::json;
 
 /// Set of options on how to format the output.
 pub struct OutputOptions {
@@ -74,7 +70,7 @@ pub struct OutputOptions {
 
 /// A struct consisting of a vector containing the output streams
 pub struct OutputStreamsCollection {
-    pub streams: Vec<Box<OutputStream>>,
+    pub streams: Vec<Box<dyn OutputStream>>,
 }
 
 /// Trait marking objects that are able to output the found panic paths in a particular format, to a particular destination
@@ -136,7 +132,6 @@ impl OutputStream for JsonConsoleOutputStream {
                 "dynamic_invocation" : trace.contains_dynamic_invocation,
                 "backtrace" : json::Value::Array(
                     trace.backtrace.iter().enumerate().map(|(i, backtrace)| {
-                            let backtrace = backtrace.borrow();
                             let procedure = backtrace.procedure.deref().borrow();
                             let invocation = backtrace.outgoing_invocation.as_ref().map(Rc::deref).map(RefCell::borrow);
                             json!({
@@ -147,9 +142,9 @@ impl OutputStream for JsonConsoleOutputStream {
                                     "linkage_name_demangled" : procedure.linkage_name_demangled.clone(),
                                     "crate" : json!({
                                         "name" : procedure.defining_crate.name.clone(),
-                                        "version" : if let Some(ref version) = &procedure.defining_crate.version { version.clone().into() } else { json::Value::Null },
+                                        "version" : if let Some(version) = &procedure.defining_crate.version { version.clone().into() } else { json::Value::Null },
                                     }),
-                                    "location" : if let Some(ref location) = &procedure.location {
+                                    "location" : if let Some(location) = &procedure.location {
                                             json!({
                                                 "file" : location.file.clone(),
                                                 "line" : location.line,
@@ -184,7 +179,7 @@ impl OutputStream for JsonConsoleOutputStream {
                                                         }),
                                                         "crate" : json!({
                                                             "name" : frame.defining_crate.name.clone(),
-                                                            "version" : if let Some(ref version) = &frame.defining_crate.version { version.clone().into() } else { json::Value::Null },
+                                                            "version" : if let Some(version) = &frame.defining_crate.version { version.clone().into() } else { json::Value::Null },
                                                         }),
                                                     })
                                                 }).collect()),
@@ -207,7 +202,7 @@ impl OutputStream for JsonConsoleOutputStream {
 }
 
 fn get_output_streams(options: &OutputOptions) -> Box<OutputStreamsCollection> {
-    let mut output_stream_vec: Vec<Box<OutputStream>> = Vec::new();
+    let mut output_stream_vec: Vec<Box<dyn OutputStream>> = Vec::new();
 
     if options.silent {
         return Box::new(OutputStreamsCollection { streams: vec![] });

@@ -6,12 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use AnalysisOptions;
-use RustigCallGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
-use marker::CodeMarker;
+use crate::marker::CodeMarker;
 
 /// Implementation of the `CodeMarker` to mark code which should be analyzed for paths to panic, as specified by the crates field
 #[derive(Debug)]
@@ -86,7 +86,7 @@ impl CodeMarker for EntryPointAnalysisTargetMarker {
     }
 }
 
-pub fn get_panic_analysis_target_marker(options: &AnalysisOptions) -> Box<CodeMarker> {
+pub fn get_panic_analysis_target_marker(options: &AnalysisOptions) -> Box<dyn CodeMarker> {
     let a = &options.crate_names[..];
     match a {
         [] => Box::new(EntryPointAnalysisTargetMarker),
@@ -98,15 +98,8 @@ pub fn get_panic_analysis_target_marker(options: &AnalysisOptions) -> Box<CodeMa
 
 #[cfg(test)]
 mod test {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate std;
-    extern crate test_common;
-
-    use self::capstone::arch::BuildsCapstone;
-    use self::capstone::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::Capstone;
 
     use super::*;
 
@@ -117,8 +110,8 @@ mod test {
     use callgraph::Location;
     use callgraph::Procedure;
 
-    use RDPInlineFrameMetaData;
-    use RDPInvocationMetaData;
+    use crate::RDPInlineFrameMetaData;
+    use crate::RDPInvocationMetaData;
     use RDPProcedureMetaData;
 
     use std::cell::Cell;
@@ -127,9 +120,10 @@ mod test {
     use std::rc::Rc;
 
     use AnalysisOptions;
-    use IntermediateBacktrace::NoTrace;
+    use crate::IntermediateBacktrace::NoTrace;
 
-    use test_utils;
+    use crate::test_utils;
+    use crate::RDPProcedureMetaData;
 
     /// Helper function to create a procedure with a given name and crate name
     fn create_procedure_with_name(

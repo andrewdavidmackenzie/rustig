@@ -6,18 +6,18 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use AnalysisOptions;
-use RustigCallGraph;
-use RustigGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
+use crate::RustigGraph;
 
 use callgraph::Context;
 
-use filter::NodeFilter;
-use filter::NullNodeFilter;
+use crate::filter::NodeFilter;
+use crate::filter::NullNodeFilter;
 
-use callgraph::petgraph::prelude::Direction::Outgoing;
-use callgraph::petgraph::stable_graph::NodeIndex;
-use callgraph::petgraph::visit::EdgeRef;
+use petgraph::prelude::Direction::Outgoing;
+use petgraph::stable_graph::NodeIndex;
+use petgraph::visit::EdgeRef;
 
 #[derive(Debug)]
 struct WhiteListFunctionFilter;
@@ -78,7 +78,7 @@ impl NodeFilter for WhiteListFunctionFilter {
     }
 }
 
-pub fn get_whitelist_filter(options: &AnalysisOptions) -> Box<NodeFilter> {
+pub fn get_whitelist_filter(options: &AnalysisOptions) -> Box<dyn NodeFilter> {
     if options.full_crate_analysis {
         Box::new(NullNodeFilter)
     } else {
@@ -88,16 +88,12 @@ pub fn get_whitelist_filter(options: &AnalysisOptions) -> Box<NodeFilter> {
 
 #[cfg(test)]
 mod tests {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate test_common;
-
     use super::*;
     use callgraph::Crate;
     use callgraph::Procedure;
 
-    use self::capstone::arch::BuildsCapstone;
-    use self::capstone::prelude::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::prelude::Capstone;
 
     use std::cell::Cell;
     use std::cell::RefCell;
@@ -106,11 +102,12 @@ mod tests {
     use callgraph::InvocationType;
     use std::collections::HashMap;
     use std::rc::Rc;
-    use IntermediateBacktrace::NoTrace;
-    use RDPInvocationMetaData;
+    use crate::IntermediateBacktrace::NoTrace;
+    use crate::RDPInvocationMetaData;
     use RDPProcedureMetaData;
 
-    use test_utils;
+    use crate::test_utils;
+    use crate::RDPProcedureMetaData;
 
     /// Helper function to create a procedure with a given name and crate name
     fn create_procedure_with_name(

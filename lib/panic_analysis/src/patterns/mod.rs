@@ -11,12 +11,12 @@ mod function_panic;
 mod message_panic;
 
 use callgraph::Context;
-use AnalysisOptions;
-use PanicCallsCollection;
+use crate::AnalysisOptions;
+use crate::PanicCallsCollection;
 
-use patterns::direct_panic::get_direct_panic_pattern_finder;
-use patterns::function_panic::get_function_names_pattern_finder;
-use patterns::message_panic::get_messages_pattern_finder;
+use crate::patterns::direct_panic::get_direct_panic_pattern_finder;
+use crate::patterns::function_panic::get_function_names_pattern_finder;
+use crate::patterns::message_panic::get_messages_pattern_finder;
 
 /// Trait marking structs that can recognize common patterns in a panic call
 pub trait PatternFinder {
@@ -25,7 +25,7 @@ pub trait PatternFinder {
 
 /// Combination of multiple `PatternFinder` implementations.
 struct CombinedPatternFinder {
-    finders: Vec<Box<PatternFinder>>,
+    finders: Vec<Box<dyn PatternFinder>>,
 }
 
 impl PatternFinder for CombinedPatternFinder {
@@ -36,7 +36,7 @@ impl PatternFinder for CombinedPatternFinder {
     }
 }
 
-pub fn get_pattern_finder(options: &AnalysisOptions) -> Box<PatternFinder> {
+pub fn get_pattern_finder(options: &AnalysisOptions) -> Box<dyn PatternFinder> {
     let direct_panic_finder = get_direct_panic_pattern_finder(options);
     let unwrap_panic_finder = get_function_names_pattern_finder(options);
     let message_panic_finder = get_messages_pattern_finder(options);
@@ -52,19 +52,12 @@ pub fn get_pattern_finder(options: &AnalysisOptions) -> Box<PatternFinder> {
 
 #[cfg(test)]
 mod test {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate std;
-    extern crate test_common;
-
     use super::*;
 
     use std::cell::Cell;
     use std::rc::Rc;
 
-    use test_utils;
+    use crate::test_utils;
 
     struct FakePatternFinder {
         called: Rc<Cell<bool>>,
@@ -87,7 +80,7 @@ mod test {
         let cell2_rc = cell2.clone();
         let marker2 = Box::new(FakePatternFinder { called: cell2 });
 
-        let finders: Vec<Box<PatternFinder>> = vec![marker1, marker2];
+        let finders: Vec<Box<dyn PatternFinder>> = vec![marker1, marker2];
         let all_finders = CombinedPatternFinder { finders };
 
         let file_content = &test_common::load_test_binary_as_bytes(

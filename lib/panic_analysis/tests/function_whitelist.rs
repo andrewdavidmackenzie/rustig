@@ -28,14 +28,10 @@
 /// Usually, these are seen as the analysis target, while simplelog and std are external code
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::AnalysisOptions;
-    use self::test_common::*;
-
-    use self::panic_analysis::FunctionWhiteListEntry;
-    use self::panic_analysis::FunctionWhitelistCrateVersion;
+    use panic_analysis::AnalysisOptions;
+    use test_common::*;
+    use panic_analysis::FunctionWhiteListEntry;
+    use panic_analysis::FunctionWhitelistCrateVersion;
 
     /// This is not really a whitelisting test, but it asserts that if nothing is whitelisted, 2 paths are found
     /// (This is an assumption in th other tests, where it is not verified)

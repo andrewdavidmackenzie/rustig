@@ -6,15 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate panic_analysis;
-extern crate toml;
-
-use errors::*;
+use crate::errors::*;
 use panic_analysis::{FunctionWhiteListEntry, FunctionWhitelistCrateVersion};
 
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use serde_derive::Deserialize;
 
 #[derive(Clone, Debug, Default)]
 pub struct ConfigFileOptions {

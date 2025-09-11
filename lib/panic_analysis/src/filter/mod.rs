@@ -9,8 +9,8 @@
 mod panic_filter;
 mod whitelist_filter;
 
-use AnalysisOptions;
-use RustigCallGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
@@ -26,7 +26,7 @@ pub trait NodeFilter: Debug {
 /// Combination of multiple node filters
 #[derive(Debug)]
 struct CombinedNodeFilter {
-    filters: Vec<Box<NodeFilter>>,
+    filters: Vec<Box<dyn NodeFilter>>,
 }
 
 impl NodeFilter for CombinedNodeFilter {
@@ -52,8 +52,8 @@ impl NodeFilter for NullNodeFilter {
     }
 }
 
-pub fn get_node_filters(options: &AnalysisOptions) -> Box<NodeFilter> {
-    let filters: Vec<Box<NodeFilter>> = vec![
+pub fn get_node_filters(options: &AnalysisOptions) -> Box<dyn NodeFilter> {
+    let filters: Vec<Box<dyn NodeFilter>> = vec![
         panic_filter::get_panic_filter(&options),
         whitelist_filter::get_whitelist_filter(&options),
     ];
@@ -63,16 +63,11 @@ pub fn get_node_filters(options: &AnalysisOptions) -> Box<NodeFilter> {
 
 #[cfg(test)]
 mod tests {
-    extern crate callgraph;
-    extern crate test_common;
-
     use super::*;
     use callgraph::CallGraph;
     use std::cell::Cell;
     use std::collections::HashMap;
     use std::rc::Rc;
-
-    use test_utils;
 
     /// Filter used as a mock of NodeFilter
     #[derive(Debug)]
@@ -83,9 +78,9 @@ mod tests {
     /// Whenever filter_nodes is called, increment the call counter
     impl NodeFilter for FakeNodeFilter {
         fn filter_nodes(&self, _call_graph: &mut RustigCallGraph, _context: &Context) {
-            let current = self.filter_nodes_calls.replace(0 as usize);
+            let current = self.filter_nodes_calls.replace(0usize);
 
-            self.filter_nodes_calls.replace(current + 1 as usize);
+            self.filter_nodes_calls.replace(current + 1usize);
         }
         #[cfg(test)]
         fn get_type_name(&self) -> &str {
@@ -113,8 +108,8 @@ mod tests {
     /// Check if combined filter calls its children
     #[test]
     fn combined_filter_works() {
-        let counter1 = Rc::new(Cell::new(0 as usize));
-        let counter2 = Rc::new(Cell::new(0 as usize));
+        let counter1 = Rc::new(Cell::new(0usize));
+        let counter2 = Rc::new(Cell::new(0usize));
 
         let fake_filter1 = Box::new(FakeNodeFilter {
             filter_nodes_calls: counter1.clone(),
@@ -124,13 +119,13 @@ mod tests {
             filter_nodes_calls: counter2.clone(),
         });
 
-        let fake_filters: Vec<Box<NodeFilter>> = vec![fake_filter1, fake_filter2];
+        let fake_filters: Vec<Box<dyn NodeFilter>> = vec![fake_filter1, fake_filter2];
 
         let combined_filter = CombinedNodeFilter {
             filters: fake_filters,
         };
 
-        let graph = callgraph::petgraph::stable_graph::StableGraph::new();
+        let graph = petgraph::stable_graph::StableGraph::new();
 
         let mut cg = CallGraph {
             graph,
@@ -143,7 +138,7 @@ mod tests {
             &test_common::TestSubjectType::Debug,
         ).unwrap();
 
-        let context = test_utils::parse_context(&file);
+        let context = crate::test_utils::parse_context(&file);
 
         combined_filter.filter_nodes(&mut cg, &context);
 

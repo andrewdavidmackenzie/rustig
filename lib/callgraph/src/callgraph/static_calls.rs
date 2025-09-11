@@ -6,20 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate addr2line;
-extern crate fallible_iterator;
-extern crate gimli;
-extern crate object;
-extern crate petgraph;
+use crate::Context;
+use crate::InlineFunctionFrame;
+use crate::Invocation;
+use crate::InvocationType;
+use crate::Procedure;
 
-use Context;
-use InlineFunctionFrame;
-use Invocation;
-use InvocationType;
-use Procedure;
-
-use callgraph::fallible_iterator::FallibleIterator;
-use callgraph::InvocationFinder;
+use crate::callgraph::FallibleIterator;
+use crate::callgraph::InvocationFinder;
 
 use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
@@ -28,7 +22,7 @@ use std::rc::Rc;
 
 use capstone::*;
 
-use callgraph::CompilationInfo;
+use crate::callgraph::CompilationInfo;
 use petgraph::stable_graph::{NodeIndex, StableGraph};
 use petgraph::Directed;
 
@@ -166,12 +160,6 @@ fn get_call_type(insn: Insn, cs: &Capstone) -> Option<CallType> {
 
 #[cfg(test)]
 mod test {
-    extern crate capstone;
-    extern crate elf;
-    extern crate gimli;
-    extern crate object;
-    extern crate test_common;
-
     use super::*;
 
     use capstone::arch::BuildsCapstone;

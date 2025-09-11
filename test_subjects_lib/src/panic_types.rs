@@ -11,12 +11,12 @@ pub fn standard_panic() {
 }
 
 pub fn integer_overflow() {
-    let possible_overflow = 1 + 1;
+    let _possible_overflow = 1 + 1;
 }
 
 pub fn index_out_of_bounds() {
     let v = vec![0, 1, 2];
-    let oob = v[3];
+    let _oob = v[3];
 }
 
 pub fn unwrap_none() {

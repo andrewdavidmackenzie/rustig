@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use AnalysisOptions;
+use crate::AnalysisOptions;
 
-use RustigCallGraph;
+use crate::RustigCallGraph;
 
 use std::fmt::Debug;
 
@@ -65,7 +65,7 @@ impl GraphOutput for NoGraphOutput {
     }
 }
 
-fn get_boxed_output(active: bool, stage: String, filename: String) -> Box<GraphOutput> {
+fn get_boxed_output(active: bool, stage: String, filename: String) -> Box<dyn GraphOutput> {
     if active {
         return Box::new(DotGraphOutput { stage, filename });
     }
@@ -85,7 +85,7 @@ fn get_name_from_options(options: &AnalysisOptions) -> String {
 }
 
 /// Graph output for filtered graph
-pub fn get_graph_output_filtered(options: &AnalysisOptions) -> Box<GraphOutput> {
+pub fn get_graph_output_filtered(options: &AnalysisOptions) -> Box<dyn GraphOutput> {
     get_boxed_output(
         options.output_filtered_callgraph,
         "filtered".to_string(),
@@ -94,7 +94,7 @@ pub fn get_graph_output_filtered(options: &AnalysisOptions) -> Box<GraphOutput> 
 }
 
 /// Graph output for unfiltered, full graph
-pub fn get_graph_output_full(options: &AnalysisOptions) -> Box<GraphOutput> {
+pub fn get_graph_output_full(options: &AnalysisOptions) -> Box<dyn GraphOutput> {
     get_boxed_output(
         options.output_full_callgraph,
         "full".to_string(),
@@ -104,9 +104,7 @@ pub fn get_graph_output_full(options: &AnalysisOptions) -> Box<GraphOutput> {
 
 #[cfg(test)]
 mod test {
-    extern crate test_common;
-
-    use self::test_common::*;
+    use test_common::*;
     use super::*;
 
     use AnalysisOptions;

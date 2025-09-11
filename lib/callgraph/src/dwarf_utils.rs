@@ -6,13 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate addr2line;
-extern crate fallible_iterator;
-extern crate gimli;
-
 use std::string::String;
 
-use self::fallible_iterator::FallibleIterator;
+use fallible_iterator::FallibleIterator;
 
 use gimli::Abbreviations;
 use gimli::AttributeValue::*;
@@ -24,7 +20,7 @@ use gimli::Expression;
 use gimli::Reader;
 use gimli::ReaderOffset;
 
-use Context;
+use crate::Context;
 
 /// Function that returns a string value from an entry's attribute.
 /// If no string was found, or an error occured

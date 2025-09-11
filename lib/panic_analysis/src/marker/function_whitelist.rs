@@ -6,16 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate callgraph;
-extern crate fallible_iterator;
-extern crate gimli;
-
-use FunctionWhiteListEntry;
-use RustigCallGraph;
+use crate::FunctionWhiteListEntry;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
-use marker::CodeMarker;
+use crate::marker::CodeMarker;
 
 /// `CodeMarker` that sets the field `RDPProcedureMetaData.whitelisted` to the correct value.
 #[derive(Debug)]
@@ -53,14 +49,8 @@ impl CodeMarker for FunctionWhitelistMarker {
 
 #[cfg(test)]
 mod tests {
-    extern crate capstone;
-    extern crate gimli;
-    extern crate object;
-    extern crate std;
-    extern crate test_common;
-
-    use self::capstone::arch::BuildsCapstone;
-    use self::capstone::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::Capstone;
 
     use super::*;
 
@@ -74,9 +64,9 @@ mod tests {
 
     use callgraph::addr2line::Context as Addr2LineContext;
 
-    use RDPInlineFrameMetaData;
-    use RDPInvocationMetaData;
-    use RDPProcedureMetaData;
+    use crate::RDPInlineFrameMetaData;
+    use crate::RDPInvocationMetaData;
+    use crate::RDPProcedureMetaData;
 
     use std::cell::Cell;
     use std::cell::RefCell;
@@ -93,9 +83,9 @@ mod tests {
     use self::object::File;
     use self::object::Object;
 
-    use IntermediateBacktrace::NoTrace;
+    use crate::IntermediateBacktrace::NoTrace;
 
-    use FunctionWhitelistCrateVersion;
+    use crate::FunctionWhitelistCrateVersion;
 
     /// Local helper function to create a Context
     fn parse<'a>(file_content: &'a [u8]) -> Context<'a> {

@@ -6,25 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate addr2line;
-extern crate capstone;
-extern crate elf;
-extern crate gimli;
-extern crate goblin;
-extern crate object;
-extern crate std;
+use crate::errors::*;
 
-use errors::ResultExt;
-use errors::*;
-
-use CallGraphOptions;
-use Context;
+use crate::CallGraphOptions;
+use crate::Context;
 
 use addr2line::Context as Addr2LineContext;
 
 use capstone::arch::BuildsCapstone;
 use capstone::Capstone;
-
 use gimli::DebugAbbrev;
 use gimli::DebugInfo;
 use gimli::DebugLine;
@@ -77,7 +67,7 @@ impl Parser for DefaultParser {
             .chain_err(|| ErrorKind::ParseError("Invalid endianness specifier".to_string()))?;
         let mode_byte = elf.elf().header.e_ident[elf::types::EI_CLASS];
 
-        let endianness = gimli::LittleEndian;
+        let endianness = LittleEndian;
         let mode = match mode_byte {
             1 => capstone::arch::x86::ArchMode::Mode32,
             2 => capstone::arch::x86::ArchMode::Mode64,
@@ -145,7 +135,7 @@ impl DefaultParser {
     }
 }
 
-pub fn get_parser(_cmd_args: &CallGraphOptions) -> Box<Parser> {
+pub fn get_parser(_cmd_args: &CallGraphOptions) -> Box<dyn Parser> {
     Box::new(DefaultParser)
 }
 
@@ -154,7 +144,6 @@ mod test {
     use super::*;
     use gimli::AttributeValue::DebugStrRef;
     use gimli::*;
-    extern crate test_common;
 
     /// Test if the function panics if the passed byte array is not a valid elf file
     #[test]
@@ -260,7 +249,7 @@ mod test {
             .unwrap();
 
         assert_eq!(instr.address(), 0x6210);
-        assert_eq!(instr.bytes(), &[65 as u8, 87 as u8]);
+        assert_eq!(instr.bytes(), &[65u8, 87u8]);
         assert_eq!(instr.mnemonic(), Some("push"));
         assert_eq!(instr.op_str(), Some("r15"));
     }

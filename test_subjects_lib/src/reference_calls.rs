@@ -9,7 +9,6 @@
 struct Calls;
 
 trait TraitCalls {
-    #[inline(never)]
     fn trait_call_with_self(&self);
 }
 
@@ -47,7 +46,7 @@ pub fn unsized_call() {
 
 #[inline(never)]
 pub fn unsized_call_trait() {
-    let calls: &TraitCalls = &Calls;
+    let calls: &dyn TraitCalls = &Calls;
     call_unsized(calls);
 }
 

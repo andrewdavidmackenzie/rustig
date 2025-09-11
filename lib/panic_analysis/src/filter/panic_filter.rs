@@ -6,12 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use AnalysisOptions;
-use RustigCallGraph;
+use crate::AnalysisOptions;
+use crate::RustigCallGraph;
 
 use callgraph::Context;
 
-use filter::NodeFilter;
+use crate::filter::NodeFilter;
 
 #[derive(Debug)]
 struct NonPanicFilter;
@@ -28,22 +28,18 @@ impl NodeFilter for NonPanicFilter {
     }
 }
 
-pub fn get_panic_filter(_options: &AnalysisOptions) -> Box<NodeFilter> {
+pub fn get_panic_filter(_options: &AnalysisOptions) -> Box<dyn NodeFilter> {
     Box::new(NonPanicFilter)
 }
 
 #[cfg(test)]
 mod tests {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate test_common;
-
     use super::*;
     use callgraph::Crate;
     use callgraph::Procedure;
 
-    use self::capstone::arch::BuildsCapstone;
-    use self::capstone::prelude::Capstone;
+    use capstone::arch::BuildsCapstone;
+    use capstone::prelude::Capstone;
 
     use std::cell::Cell;
     use std::cell::RefCell;
@@ -51,11 +47,12 @@ mod tests {
     use callgraph::CallGraph;
     use std::collections::HashMap;
     use std::rc::Rc;
-    use IntermediateBacktrace::NoTrace;
+    use crate::IntermediateBacktrace::NoTrace;
     use RDPProcedureMetaData;
     use RustigCallGraph;
 
-    use test_utils;
+    use crate::test_utils;
+    use crate::RDPProcedureMetaData;
 
     /// Helper function to create a procedure with a given name and crate name
     fn create_procedure_with_name(

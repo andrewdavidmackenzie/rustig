@@ -7,10 +7,10 @@
 // except according to those terms.
 
 use callgraph::Context;
-use patterns::PatternFinder;
-use AnalysisOptions;
-use PanicCallsCollection;
-use PanicPattern::DirectCall;
+use crate::patterns::PatternFinder;
+use crate::AnalysisOptions;
+use crate::PanicCallsCollection;
+use crate::PanicPattern::DirectCall;
 
 /// Implementation of the `PatternFinder` to direct calls to panic in a `PanicCallsCollection`.
 struct DirectPanicPatternFinder;
@@ -51,26 +51,23 @@ impl PatternFinder for DirectPanicPatternFinder {
     }
 }
 
-pub fn get_direct_panic_pattern_finder(_options: &AnalysisOptions) -> Box<PatternFinder> {
+pub fn get_direct_panic_pattern_finder(_options: &AnalysisOptions) -> Box<dyn PatternFinder> {
     Box::new(DirectPanicPatternFinder)
 }
 
 #[cfg(test)]
 mod test {
-    extern crate capstone;
-    extern crate test_common;
-
     use super::*;
 
     use std::cell::Cell;
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use RDPInvocationMetaData;
-    use RDPProcedureMetaData;
+    use crate::RDPInvocationMetaData;
+    use crate::RDPProcedureMetaData;
 
-    use BackTraceEntry;
-    use IntermediateBacktrace::NoTrace;
+    use crate::BackTraceEntry;
+    use crate::IntermediateBacktrace::NoTrace;
 
     use self::capstone::arch::BuildsCapstone;
 
@@ -81,12 +78,12 @@ mod test {
     use callgraph::Location;
     use callgraph::Procedure;
 
-    use PanicCall;
+    use crate::PanicCall;
     use PanicCallsCollection;
-    use PanicPattern::Unrecognized;
-    use RDPInlineFrameMetaData;
+    use crate::PanicPattern::Unrecognized;
+    use crate::RDPInlineFrameMetaData;
 
-    use test_utils;
+    use crate::test_utils;
 
     /// Helper method for creating procedures
     fn create_procedure(

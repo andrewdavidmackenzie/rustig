@@ -8,11 +8,8 @@
 
 #[cfg(test)]
 mod test {
-    extern crate panic_analysis;
-    extern crate test_common;
-
-    use self::panic_analysis::*;
-    use self::test_common::*;
+    use panic_analysis::*;
+    use test_common::*;
 
     /// In this integration test we look at the 'indexing' test subject
     /// This library has a dependency on test_subjects_lib::indexing, which does calls to `core::slice::SliceIndex<[T]>>::index`.

@@ -8,13 +8,13 @@
 
 mod panic_message;
 
-use PanicCallsCollection;
+use crate::PanicCallsCollection;
 
-use AnalysisOptions;
+use crate::AnalysisOptions;
 
-use callgraph::petgraph::prelude::Direction::Incoming;
-use callgraph::petgraph::stable_graph::EdgeIndex;
-use callgraph::petgraph::stable_graph::NodeIndex;
+use petgraph::prelude::Direction::Incoming;
+use petgraph::stable_graph::EdgeIndex;
+use petgraph::stable_graph::NodeIndex;
 
 use callgraph::Context;
 use callgraph::InvocationType;
@@ -22,14 +22,14 @@ use callgraph::InvocationType;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 
-use BackTraceEntry;
-use IntermediateBacktrace::UpwardTrace;
-use PanicCall;
-use PanicPattern::Unrecognized;
-use RustigCallGraph;
-use RustigGraph;
+use crate::BackTraceEntry;
+use crate::IntermediateBacktrace::UpwardTrace;
+use crate::PanicCall;
+use crate::PanicPattern::Unrecognized;
+use crate::RustigCallGraph;
+use crate::RustigGraph;
 
-use panic_calls::panic_message::PanicMessageFinder;
+use crate::panic_calls::panic_message::PanicMessageFinder;
 
 /// Trait marking objects are able to find calls to panic in a call graph
 pub trait PanicCallsFinder {
@@ -38,7 +38,7 @@ pub trait PanicCallsFinder {
 
 /// Implementation of the `PanicCallsFinder` to find a trace from an analysis target to a panic.
 struct DefaultPanicCallsFinder {
-    message_finders: Vec<Box<PanicMessageFinder>>,
+    message_finders: Vec<Box<dyn PanicMessageFinder>>,
 }
 
 impl PanicCallsFinder for DefaultPanicCallsFinder {
@@ -230,7 +230,7 @@ impl DefaultPanicCallsFinder {
     }
 }
 
-pub fn get_panic_call_finder(options: &AnalysisOptions) -> Box<PanicCallsFinder> {
+pub fn get_panic_call_finder(options: &AnalysisOptions) -> Box<dyn PanicCallsFinder> {
     Box::new(DefaultPanicCallsFinder {
         message_finders: panic_message::get_panic_message_finders(options),
     })
@@ -238,15 +238,11 @@ pub fn get_panic_call_finder(options: &AnalysisOptions) -> Box<PanicCallsFinder>
 
 #[cfg(test)]
 mod test {
-    extern crate callgraph;
-    extern crate capstone;
-    extern crate test_common;
-
     use super::*;
 
-    use self::capstone::arch::BuildsCapstone;
+    use capstone::arch::BuildsCapstone;
 
-    use RDPProcedureMetaData;
+    use crate::RDPProcedureMetaData;
 
     use callgraph::Crate;
     use callgraph::InvocationType::Direct;
@@ -258,9 +254,9 @@ mod test {
     use callgraph::Invocation;
     use std::collections::HashMap;
     use std::rc::Rc;
-    use test_utils;
-    use IntermediateBacktrace::NoTrace;
-    use RDPInvocationMetaData;
+    use crate::test_utils;
+    use crate::IntermediateBacktrace::NoTrace;
+    use crate::RDPInvocationMetaData;
 
     /// Helper method for creating procedures
     fn create_procedure(

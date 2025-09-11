@@ -28,6 +28,6 @@ fn qux<T: Baz + ?Sized>(x: &T) {
 }
 
 fn main() {
-    let x: &Baz = &Foo;
+    let x: &dyn Baz = &Foo;
     qux(x);
 }
