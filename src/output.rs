@@ -55,7 +55,6 @@ use serde_json as json;
 use std::io;
 use std::io::Write;
 use std::ops::Deref;
-use std::rc::Rc;
 use serde_json::json;
 
 /// Set of options on how to format the output.
@@ -133,7 +132,7 @@ impl OutputStream for JsonConsoleOutputStream {
                 "backtrace" : json::Value::Array(
                     trace.backtrace.iter().enumerate().map(|(i, backtrace)| {
                             let procedure = backtrace.procedure.deref().borrow();
-                            let invocation = backtrace.outgoing_invocation.as_ref().map(Rc::deref).map(RefCell::borrow);
+                            let invocation = backtrace.outgoing_invocation.as_deref().map(RefCell::borrow);
                             json!({
                                 "index" : i,
                                 "procedure" : json!({
@@ -223,10 +222,10 @@ fn get_output_streams(options: &OutputOptions) -> Box<OutputStreamsCollection> {
 
 /// Print the results to the standard output, in the format specified by the options parameter.
 pub fn print_results(options: &OutputOptions, results: &PanicCallsCollection) {
-    let output_streams = get_output_streams(&options);
+    let output_streams = get_output_streams(options);
 
     // Output results
     for outputstream in output_streams.streams {
-        outputstream.print_output(&results)
+        outputstream.print_output(results)
     }
 }

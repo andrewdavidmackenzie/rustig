@@ -20,7 +20,7 @@ use crate::output::OutputOptions;
 
 use std::option::Option::Some;
 
-static CALL_GRAPH_BUILD_MODES: [&'static str; 2] = ["full", "filtered"];
+static CALL_GRAPH_BUILD_MODES: [&str; 2] = ["full", "filtered"];
 
 fn parse_multiple_args(cmd_matches: &ArgMatches, name: &str) -> Vec<String> {
     match cmd_matches.values_of(name) {

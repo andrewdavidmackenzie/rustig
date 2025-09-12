@@ -53,9 +53,6 @@ pub fn main() {
 
 #[cfg(test)]
 mod test {
-    extern crate assert_cli;
-    extern crate test_common;
-
     /// Test if correct exit code 1 is returned when 1 or more panics are found
     #[test]
     fn test_panics_found() {

@@ -15,7 +15,7 @@ trait TraitCalls {
 impl TraitCalls for Calls {
     #[inline(never)]
     fn trait_call_with_self(&self) {
-        panic!()
+        panic!("Explicit call to 'panic!()' from 'trait_call_with_self()' in 'box_traits'")
     }
 }
 
