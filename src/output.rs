@@ -220,12 +220,12 @@ fn get_output_streams(options: &OutputOptions) -> Box<OutputStreamsCollection> {
     })
 }
 
-/// Print the results to the standard output, in the format specified by the options parameter.
+/// Print the results to the standard output, in the format specified by the [options] parameter.
 pub fn print_results(options: &OutputOptions, results: &PanicCallsCollection) {
     let output_streams = get_output_streams(options);
 
     // Output results
-    for outputstream in output_streams.streams {
-        outputstream.print_output(results)
+    for output_stream in output_streams.streams {
+        output_stream.print_output(results)
     }
 }
