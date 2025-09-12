@@ -57,13 +57,10 @@ mod test {
     #[test]
     fn test_panics_found() {
         let path =
-            test_common::get_test_subject_path("lib_calls", &test_common::TestSubjectType::Debug)
-                .to_str()
-                .unwrap()
-                .to_string();
+            test_common::get_test_subject_path("lib_calls", &test_common::TestSubjectType::Debug);
 
         assert_cli::Assert::main_binary()
-            .with_args(&["-b", &path, "-c", "test_subjects", "-s"])
+            .with_args(&["-b", &path.to_string_lossy(), "-c", "test_subjects", "-s"])
             .fails_with(1)
             .unwrap();
     }
@@ -72,13 +69,10 @@ mod test {
     #[test]
     fn test_no_panics_found() {
         let path =
-            test_common::get_test_subject_path("empty", &test_common::TestSubjectType::Debug)
-                .to_str()
-                .unwrap()
-                .to_string();
+            test_common::get_test_subject_path("empty", &test_common::TestSubjectType::Debug);
 
         assert_cli::Assert::main_binary()
-            .with_args(&["-b", &path, "-c", "test_subjects", "-s"])
+            .with_args(&["-b", &path.to_string_lossy(), "-c", "test_subjects", "-s"])
             .succeeds()
             .unwrap();
     }

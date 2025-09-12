@@ -26,10 +26,6 @@ use object::ElfFile;
 use object::File;
 use object::Object;
 
-// This import was falsely flagged as unused by the rust compiler.
-#[allow(unused_imports)]
-use object::ObjectSection;
-
 /// Trait marking objects that are able to parse a binary into appropriate ELF/DWARF/Disassembled information
 pub trait Parser {
     fn parse<'a>(&self, file_content: &'a [u8]) -> Result<Context<'a>>;
@@ -65,7 +61,7 @@ impl Parser for DefaultParser {
             .header
             .endianness()
             .chain_err(|| ErrorKind::ParseError("Invalid endianness specifier".to_string()))?;
-        let mode_byte = elf.elf().header.e_ident[elf::types::EI_CLASS];
+        let mode_byte = elf.elf().header.e_ident[elf::abi::EI_CLASS];
 
         let endianness = LittleEndian;
         let mode = match mode_byte {

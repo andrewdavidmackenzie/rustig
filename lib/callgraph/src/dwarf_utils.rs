@@ -23,7 +23,7 @@ use gimli::ReaderOffset;
 use crate::Context;
 
 /// Function that returns a string value from an entry's attribute.
-/// If no string was found, or an error occured
+/// If no string was found, or an error occurred
 /// an error message will be returned.
 pub fn get_attr_string_value_safe<R: Reader>(
     entry: &DebuggingInformationEntry<R, R::Offset>,
@@ -39,7 +39,7 @@ pub fn get_attr_string_value_safe<R: Reader>(
         .unwrap_or_else(|| format!("<no {} attribute given>", attr).to_string())
 }
 
-/// Function that returns the buffer of a string value from an entries attribute. If no string valute was found, `None` will be returned
+/// Function that returns the buffer of a string value from an entries attribute. If no string value was found, `None` will be returned
 pub fn get_attr_string_buf<R: Reader>(
     entry: &DebuggingInformationEntry<R, R::Offset>,
     attr: DwAt,
@@ -76,7 +76,7 @@ pub fn get_attr_buf<R: Reader>(
     }
 }
 
-/// If the attribute has an data value, it will be returned. Else `None` will be given.
+/// If the attribute has a data value, it will be returned. Else `None` will be given.
 pub fn get_attr_u64_value<R: Reader>(
     entry: &DebuggingInformationEntry<R, R::Offset>,
     attr: DwAt,

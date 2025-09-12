@@ -10,13 +10,13 @@ homepage.workspace = true
 
 [dependencies]
 callgraph = { path = "../../lib/callgraph" }
-gimli = "0.15.0"
 fallible-iterator = "0.1.2"
 error-chain = "0.12.4"
 petgraph = "0.8.2"
 object = "0.7.0"
 capstone = { git = "https://github.com/capstone-rust/capstone-rs.git", rev = "dc10578aa27414afc93f0a87959b2f0c22dc66c3" }
 byteorder = "1.2.3"
+gimli = "0.15.0"
 
 [dev-dependencies]
 test_common = { path = "../../lib/test_common" }
