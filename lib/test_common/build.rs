@@ -7,36 +7,18 @@
 // except according to those terms.
 
 /// This build script ensures the binaries of the test subjects (programs that are used as input for the tests)
-/// are build. Currently, we build 2 types of tests
-/// ## `test_subjects`
-/// The projects in this workspace build against the default toolchain. These subjects are
-/// used in tests that verify the tool works on a (new) particular Rust version. These tests perform regression testing on
-/// the tool itself as well as the Rust compiler. Changes in the Rust compiler that break the tool should be detected by tests
+/// are built for debug and release.
+/// These subjects are used in tests that verify the tool works on a (new) particular Rust version.
+/// These tests perform regression testing on the tool itself as well as the Rust compiler.
+/// Changes in the Rust compiler that break the tool should be detected by tests
 /// on these projects.
-/// ## `test_subjects_stable_rustc`
-/// These tests build against a particular Rust version ('stable-2018-05-10'). Tests against these subjects may have stronger
-/// assumptions on the created binary. These tests do no regression testing on the Rust compiler (since the version is fixed)
-/// but do regression testing on the tool.
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::Command;
 
-static RES_PATH: &str = "test_subjects";
-static RES_PATH_STABLE_RUSTC: &str = "test_subjects_stable_rustc";
-static STABLE_RUSTC_VERSION: &str = "stable-2018-05-10"; // 1.26.0
-
-static BUILD_MODE_ARGS: &[Option<&str>] = &[None, Some("--release")];
+const RES_PATH: &str = "test_subjects";
+const BUILD_MODE_ARGS: &[Option<&str>] = &[None, Some("--release")];
 
 fn main() {
-    // Build test_subjects on default toolchain for compiler regression testing
-    build_subjects(RES_PATH, None);
-    // Build test_subjects on toolchain 'stable-2018-05-10' for tool regression testing
-    build_subjects(RES_PATH_STABLE_RUSTC, Some(STABLE_RUSTC_VERSION));
-}
-
-/// Get the full path of `test_subjects` directory
-fn test_subject_dir(endpath: &str) -> PathBuf {
-    // '${PWD}/lib/test_common'
     let current_dir = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
     let grandparent_dir = current_dir
         .parent()
@@ -44,42 +26,28 @@ fn test_subject_dir(endpath: &str) -> PathBuf {
         .parent()
         .expect("Current directory has no grandparent");
 
-    // '${PWD}/<endpath>
-    Path::join(grandparent_dir, Path::new(endpath))
-}
+    let test_subjects_dir = Path::join(grandparent_dir, Path::new(RES_PATH));
 
-fn build_subjects(endpath: &str, fixed_cargo_version: Option<&str>) {
-    let subjects = test_subject_dir(endpath);
-    let subjects = subjects.to_str().unwrap();
-    clean(subjects);
-    build(subjects, fixed_cargo_version);
-}
-
-fn clean(subjects: &str) {
-    let subjects_clean_status = Command::new("cargo")
-        .current_dir(subjects)
-        .arg("clean")
-        .status()
-        .expect("Cleaning test subject dir did not produce any output");
-
-    if !subjects_clean_status.success() {
-        panic!("Could not clean test subjects, manual intervention needed");
-    }
-}
-
-fn build(subjects: &str, fixed_cargo_version: Option<&str>) {
     BUILD_MODE_ARGS.iter().for_each(|arg| {
-        let mut cargo = Command::new("cargo");
+        // clean the dir to force a fresh build
+        let subjects_clean_status = Command::new("cargo")
+            .current_dir(test_subjects_dir.clone())
+            .arg("clean")
+            .status()
+            .expect("Cleaning test subject dir did not produce any output");
 
-        cargo.current_dir(subjects);
-
-        if let Some(ref version) = fixed_cargo_version {
-            cargo.env("RUSTUP_TOOLCHAIN", version);
+        if !subjects_clean_status.success() {
+            panic!("Could not clean test subjects, manual intervention needed");
         }
 
+        // rebuild the dir
+        let mut cargo = Command::new("cargo");
+
+        cargo.current_dir(test_subjects_dir.clone());
+
         cargo.arg("build");
-	cargo.arg("--target");
-	cargo.arg("x86_64-unknown-linux-gnu");
+        cargo.arg("--target");
+        cargo.arg("x86_64-unknown-linux-gnu");
 
         if let Some(arg) = arg {
             cargo.arg(arg);
