@@ -343,21 +343,19 @@ impl<P, I: Default, F: Default> LEABasedDynamicInvocationFinder<P, I, F> {
         dest_indices
             .iter()
             .for_each(|(lea_addr, target_addr, invocation_type)| {
-                let frames = ctx.file_context
-                    .find_frames(*lea_addr)
-                    .unwrap_or_else(|_| {
-                        panic!("Creating iterator over dynamic function frames of the given virtual memory address: {:X} failed", *lea_addr)
-                    })
-                    .iterator()
-                    .filter_map(|frame_res| frame_res.ok())
+                let lookup_result = ctx.loader.find_frames(*lea_addr).unwrap();
+
+                let frames = lookup_result
                     .map(|frame| {
-                        InlineFunctionFrame::convert_frame(
+                        Ok(InlineFunctionFrame::convert_frame(
                             &frame,
                             compilation_info.compilation_dirs,
                             compilation_info.rust_version.to_owned(),
-                        )
+                        ))
                     })
-                    .collect();
+                    .collect()
+                    .unwrap();
+
                 graph.add_edge(
                     idx,
                     proc_index[target_addr],
@@ -500,7 +498,7 @@ pub mod tests {
 
         Context {
             elf,
-            file_context,
+            loader: file_context,
             dwarf_info,
             dwarf_abbrev,
             dwarf_strings,

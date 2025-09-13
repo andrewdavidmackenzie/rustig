@@ -8,7 +8,7 @@
 
 //! This is the command-line interface to the panic_analysis crate. Details about the command-line options can be 
 //! obtained by running `rustig --help` on a build or by visiting the 
-//! [Github documentation](https://github.com/Technolution/rustig).
+//! [GitHub documentation](https://github.com/Technolution/rustig).
 //! 
 
 #![recursion_limit="128"]

@@ -10,7 +10,7 @@ use callgraph;
 use callgraph::addr2line::Context as Addr2LineContext;
 use callgraph::capstone::arch::BuildsCapstone;
 use callgraph::capstone::Capstone;
-use callgraph::gimli::{DebugAbbrev, DebugInfo, DebugLine, DebugStr, EndianBuf, LittleEndian};
+use callgraph::gimli::{DebugAbbrev, DebugInfo, DebugLine, DebugStr, EndianSlice, LittleEndian};
 use callgraph::object::{ElfFile, File as ObjectFile, Object};
 use callgraph::Context;
 
@@ -37,7 +37,7 @@ pub fn parse_context(file_content: &[u8]) -> Context {
 
     Context {
         elf,
-        file_context,
+        loader: file_context,
         dwarf_info,
         dwarf_abbrev,
         dwarf_strings,
@@ -50,10 +50,10 @@ pub fn parse_context(file_content: &[u8]) -> Context {
 fn parse_debug_info<'a>(
     elf: &ElfFile<'a>,
 ) -> (
-    DebugInfo<EndianBuf<'a, LittleEndian>>,
-    DebugAbbrev<EndianBuf<'a, LittleEndian>>,
-    DebugStr<EndianBuf<'a, LittleEndian>>,
-    DebugLine<EndianBuf<'a, LittleEndian>>,
+    DebugInfo<EndianSlice<'a, LittleEndian>>,
+    DebugAbbrev<EndianSlice<'a, LittleEndian>>,
+    DebugStr<EndianSlice<'a, LittleEndian>>,
+    DebugLine<EndianSlice<'a, LittleEndian>>,
 ) {
     let debug_info_data = elf.section_data_by_name(".debug_info")
         .expect("No .debug_info section in binary");

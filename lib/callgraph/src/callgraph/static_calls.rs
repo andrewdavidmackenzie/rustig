@@ -19,7 +19,6 @@ use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::rc::Rc;
-
 use capstone::*;
 
 use crate::callgraph::CompilationInfo;
@@ -74,12 +73,12 @@ impl<P, I: Default, F: Default> InvocationFinder<P, I, F> for StaticCallInvocati
                         let origin = &call_index[&insn.address()];
                         let destination = proc_index.get(&(*target as u64))?;
 
-                        let frames = ctx.file_context.find_frames(insn.address())
-                            .unwrap_or_else(|_| panic!("Creating iterator over static function frames of the given virtual memory address: {} failed", insn.address()))
-                            .iterator()
-                            .filter_map(|frame_res| frame_res.ok())
-                            .map(|frame| InlineFunctionFrame::convert_frame(&frame, compilation_info.compilation_dirs, compilation_info.rust_version.to_owned()))
-                            .collect();
+                        let lookup_result = ctx.loader.find_frames(insn.address()).unwrap();
+
+                        let frames = lookup_result
+                            .map(|frame| Ok(InlineFunctionFrame::convert_frame(&frame, compilation_info.compilation_dirs, compilation_info.rust_version.to_owned())))
+                            .collect()
+                            .unwrap();
 
                         Some((origin, destination, invocation_type, frames, insn.address()))
                     }

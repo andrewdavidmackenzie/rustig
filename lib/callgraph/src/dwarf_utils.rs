@@ -10,9 +10,8 @@ use std::string::String;
 
 use fallible_iterator::FallibleIterator;
 
-use gimli::Abbreviations;
+use gimli::{Abbreviations, UnitHeader};
 use gimli::AttributeValue::*;
-use gimli::CompilationUnitHeader;
 use gimli::DebugStr;
 use gimli::DebuggingInformationEntry;
 use gimli::DwAt;
@@ -172,7 +171,7 @@ pub fn get_rust_version(ctx: &Context) -> Option<String> {
 /// Function getting an attribute string value. If the attribute is not present, but an DW_AT_abstract_origin
 /// attribute is present, the references entry will be checked for the desired attribute.
 pub fn get_attr_str_with_origin_traversal<R: Reader>(
-    cu: &CompilationUnitHeader<R, R::Offset>,
+    cu: &UnitHeader<R, R::Offset>,
     entry: &DebuggingInformationEntry<R, R::Offset>,
     attr: DwAt,
     abbrev: &Abbreviations,

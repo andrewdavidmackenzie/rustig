@@ -15,7 +15,7 @@ use crate::Crate;
 
 use gimli;
 use gimli::DebuggingInformationEntry;
-use gimli::EndianBuf;
+use gimli::EndianSlice;
 use gimli::LittleEndian;
 use gimli::RunTimeEndian;
 
@@ -71,7 +71,7 @@ pub fn get_crate_from_comp_dir(comp_dir: Option<&str>, rust_version: String) -> 
 pub fn get_crate_details(
     _address: u64,
     defining_file: Option<&str>,
-    cu_die: &DebuggingInformationEntry<EndianBuf<LittleEndian>>,
+    cu_die: &DebuggingInformationEntry<EndianSlice<LittleEndian>>,
     ctx: &Context,
     compilation_unit_dirs: &[&str],
 ) -> Crate {
@@ -103,7 +103,7 @@ pub fn get_crate_details(
 
 /// Returns the crate for inlined functions
 pub fn get_crate_for_inlined_functions(
-    frame: &Frame<EndianBuf<RunTimeEndian>>,
+    frame: &Frame<EndianSlice<RunTimeEndian>>,
     compilation_dirs: &[&str],
     rust_version: String,
 ) -> Crate {
@@ -128,7 +128,7 @@ pub fn get_crate_for_inlined_functions(
 
     let frame_comp_dir = compilation_dirs
         .iter()
-        .find(|comp_dir| file_path.starts_with(comp_dir));
+        .find(|comp_dir| file_path.starts_with(*comp_dir));
     get_crate_from_comp_dir(frame_comp_dir.map(|x| x.to_owned()), rust_version)
 }
 

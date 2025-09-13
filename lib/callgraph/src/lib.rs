@@ -7,7 +7,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod binary_read;
 mod callgraph;
 pub mod crate_utils;
 pub mod dwarf_utils;
@@ -17,7 +16,7 @@ pub mod errors;
 
 use crate::errors::*;
 
-use addr2line::Context as Addr2LineContext;
+use addr2line::{Loader};
 use addr2line::Frame as Addr2LineFrame;
 use addr2line::Location as Addr2LineLocation;
 
@@ -28,7 +27,7 @@ use gimli::DebugAbbrev;
 use gimli::DebugInfo;
 use gimli::DebugLine;
 use gimli::DebugStr;
-use gimli::EndianBuf;
+use gimli::EndianSlice;
 use gimli::LittleEndian;
 use gimli::RunTimeEndian;
 
@@ -48,16 +47,10 @@ use std::fmt::Formatter;
 use std::path::Path;
 use std::rc::Rc;
 
-/// Struct identifying a particular binary
-#[derive(Debug, Clone)]
-pub struct Binary<'a> {
-    pub path: &'a Path,
-}
-
 /// Configuration to be passed to the call-graph builder
 #[derive(Debug, Clone)]
 pub struct CallGraphOptions<'a> {
-    pub binary: Binary<'a>, // And many, many more
+    pub path: &'a Path,
 }
 
 /// Crate metadata
@@ -197,7 +190,7 @@ impl<InlineFunctionFrameMetaData> Display for InlineFunctionFrame<InlineFunction
 /// Convert an `Addr2LineFrame` (from addr2line crate) to our `InlineFunctionFrame` type.
 impl<'a, InlineFunctionFrameMetaData: Default> InlineFunctionFrame<InlineFunctionFrameMetaData> {
     fn convert_frame(
-        frame: &Addr2LineFrame<EndianBuf<'a, RunTimeEndian>>,
+        frame: &Addr2LineFrame<EndianSlice<'a, RunTimeEndian>>,
         compilation_dirs: &[&str],
         rust_version: String,
     ) -> InlineFunctionFrame<InlineFunctionFrameMetaData> {
@@ -250,25 +243,20 @@ impl Display for Location {
 }
 
 /// Conversion from `Addr2LineLocation`, so that we can convert to `Location` anywhere in a predicatable way.
-impl<'a> From<&'a Addr2LineLocation> for Location {
+impl<'a> From<&'a Addr2LineLocation<'a>> for Location {
     fn from(location: &'a Addr2LineLocation) -> Location {
         Location {
             // Convert file option to string
             file: location
                 .file
-                .as_ref()
-                .and_then(|file_path| {
-                    file_path
-                        .to_str().map(|file_str| file_str.to_string())
-                })
-                .unwrap_or_else(|| "unknown_file".to_string()),
+                .unwrap_or("unknown_file").to_string(),
             // Copy location line
-            line: location.line.unwrap_or(0),
+            line: location.line.unwrap_or(0) as u64,
         }
     }
 }
 
-impl From<Addr2LineLocation> for Location {
+impl From<Addr2LineLocation<'_>> for Location {
     fn from(location: Addr2LineLocation) -> Location {
         Location::from(&location)
     }
@@ -315,11 +303,11 @@ impl<PMetadata: Debug, IMetadata: Debug, FMetadata: Debug>
 /// Parsed information about the binary
 pub struct Context<'a> {
     pub elf: ElfFile<'a>,
-    pub file_context: Addr2LineContext<EndianBuf<'a, RunTimeEndian>>,
-    pub dwarf_info: DebugInfo<EndianBuf<'a, LittleEndian>>,
-    pub dwarf_abbrev: DebugAbbrev<EndianBuf<'a, LittleEndian>>,
-    pub dwarf_strings: DebugStr<EndianBuf<'a, LittleEndian>>,
-    pub dwarf_line: DebugLine<EndianBuf<'a, LittleEndian>>,
+    pub loader: Loader,
+    pub dwarf_info: DebugInfo<EndianSlice<'a, LittleEndian>>,
+    pub dwarf_abbrev: DebugAbbrev<EndianSlice<'a, LittleEndian>>,
+    pub dwarf_strings: DebugStr<EndianSlice<'a, LittleEndian>>,
+    pub dwarf_line: DebugLine<EndianSlice<'a, LittleEndian>>,
     pub capstone: Capstone,
 }
 
@@ -343,11 +331,6 @@ pub enum InvocationType {
     ProcedureReference,
     VTable,
     Jump,
-}
-
-pub fn read_file(callgraph_options: &CallGraphOptions) -> Result<Vec<u8>> {
-    let reader = binary_read::get_reader(callgraph_options);
-    reader.read(&callgraph_options.binary)
 }
 
 /// Checks whether the callgraph contains other crates than stdlib.
@@ -376,19 +359,17 @@ pub fn check_debug_information<PMetadata, IMetadata, FMetadata>(
     }
 }
 
-pub fn build_call_graph<
-    'a,
+pub fn build_call_graph<'a,
     PMetadata: Default + Debug + 'static,
     IMetadata: Default + Debug + 'static,
-    FMetadata: Default + Debug + 'static,
->(
-    callgraph_options: &'a CallGraphOptions,
-    file_content: &'a [u8],
+    FMetadata: Default + Debug + 'static>(
+    file_content: &'a[u8],
+    file_path: &'a Path,
 ) -> Result<(CallGraph<PMetadata, IMetadata, FMetadata>, Context<'a>)> {
-    let parser = parse::get_parser(callgraph_options);
-    let context = parser.parse(file_content)?;
+    let parser = parse::get_parser();
+    let context = parser.parse(file_content, file_path)?;
 
-    let call_graph_builder = callgraph::get_call_graph_builder(callgraph_options, &context)?;
+    let call_graph_builder = callgraph::get_call_graph_builder(&context)?;
     let call_graph = call_graph_builder.build_call_graph(&context);
 
     check_debug_information(&call_graph)?;

@@ -6,29 +6,29 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::path::Path;
 use crate::errors::*;
 
-use crate::CallGraphOptions;
 use crate::Context;
 
-use addr2line::Context as Addr2LineContext;
+use addr2line::{Loader};
 
 use capstone::arch::BuildsCapstone;
-use capstone::Capstone;
-use gimli::DebugAbbrev;
+use capstone::{Capstone};
+use gimli::{DebugAbbrev};
 use gimli::DebugInfo;
 use gimli::DebugLine;
 use gimli::DebugStr;
-use gimli::EndianBuf;
+use gimli::EndianSlice;
 use gimli::LittleEndian;
+use goblin::container::Endian::Big;
 
 use object::ElfFile;
-use object::File;
 use object::Object;
 
 /// Trait marking objects that are able to parse a binary into appropriate ELF/DWARF/Disassembled information
 pub trait Parser {
-    fn parse<'a>(&self, file_content: &'a [u8]) -> Result<Context<'a>>;
+    fn parse<'a>(&self, file_content: &'a [u8], file_path: &Path) -> Result<Context<'a>>;
 }
 
 // Implementation of `Parser` that does parsing without any extraordinary processing.
@@ -36,23 +36,20 @@ struct DefaultParser;
 
 /// Wrapper data structure for debug info
 type DebugData<'a> = (
-    DebugInfo<EndianBuf<'a, LittleEndian>>,
-    DebugAbbrev<EndianBuf<'a, LittleEndian>>,
-    DebugStr<EndianBuf<'a, LittleEndian>>,
-    DebugLine<EndianBuf<'a, LittleEndian>>,
+    DebugInfo<EndianSlice<'a, LittleEndian>>,
+    DebugAbbrev<EndianSlice<'a, LittleEndian>>,
+    DebugStr<EndianSlice<'a, LittleEndian>>,
+    DebugLine<EndianSlice<'a, LittleEndian>>,
 );
 
 impl Parser for DefaultParser {
-    fn parse<'a>(&self, file_content: &'a [u8]) -> Result<Context<'a>> {
+    fn parse<'a>(&self, file_content: &'a [u8], file_path: &Path) -> Result<Context<'a>> {
         let elf = ElfFile::parse(file_content)
             .map_err(|message| Error::from(ErrorKind::ParseError(message.to_string())))?;
 
-        let file = File::parse(file_content)
-            .map_err(|message| Error::from(ErrorKind::ParseError(message.to_string())))?;
-
-        let file_context = Addr2LineContext::new(&file).map_err(|message| {
+        let loader = Loader::new(file_path).map_err(|message| {
             Error::from(ErrorKind::ParseError(format!(
-                "Could not construct addr2line context from file: {}",
+                "Could not construct addr2line Loader to read Dwarf info: {}",
                 message
             )))
         })?;
@@ -60,10 +57,16 @@ impl Parser for DefaultParser {
         let data_byte = elf.elf()
             .header
             .endianness()
-            .chain_err(|| ErrorKind::ParseError("Invalid endianness specifier".to_string()))?;
-        let mode_byte = elf.elf().header.e_ident[elf::abi::EI_CLASS];
+            .map_err(|_e| ErrorKind::ParseError("Invalid endianness specifier".to_string()))?;
 
+        if data_byte == Big {
+            return Err(
+                ErrorKind::NotSupported("Big endian files not supported yet".to_string()).into(),
+            );
+        }
         let endianness = LittleEndian;
+
+        let mode_byte = elf.elf().header.e_ident[elf::abi::EI_CLASS];
         let mode = match mode_byte {
             1 => capstone::arch::x86::ArchMode::Mode32,
             2 => capstone::arch::x86::ArchMode::Mode64,
@@ -73,12 +76,6 @@ impl Parser for DefaultParser {
                 )
             }
         };
-
-        if data_byte == goblin::container::Endian::Big {
-            return Err(
-                ErrorKind::NotSupported("Big endian files not supported yet".to_string()).into(),
-            );
-        }
 
         let (dwarf_info, dwarf_abbrev, dwarf_strings, dwarf_line) =
             self.parse_dwarf_info(&elf, endianness)?;
@@ -95,7 +92,7 @@ impl Parser for DefaultParser {
 
         Ok(Context {
             elf,
-            file_context,
+            loader,
             dwarf_info,
             dwarf_abbrev,
             dwarf_strings,
@@ -131,7 +128,7 @@ impl DefaultParser {
     }
 }
 
-pub fn get_parser(_cmd_args: &CallGraphOptions) -> Box<dyn Parser> {
+pub fn get_parser() -> Box<dyn Parser> {
     Box::new(DefaultParser)
 }
 
@@ -148,7 +145,7 @@ mod test {
     }
 
     /// Test if the `DefaultParser` parses debug abbreviations correctly.
-    /// We validate this by checking the tag, children and an attribute for 2 DIE's.
+    /// We validate this by checking the tag, children and an attribute for 2 DIEs.
     #[test]
     pub fn test_example_binary_debug_abbrev() {
         let file_content = &test_common::load_test_binary_as_bytes(
@@ -222,7 +219,7 @@ mod test {
         let name_value = context.dwarf_strings.get_str(name_value_ref).unwrap();
 
         assert_eq!(entry_1.tag(), DW_TAG_namespace);
-        assert_eq!(name_value, EndianBuf::new(b"core", LittleEndian));
+        assert_eq!(name_value, EndianSlice::new(b"core", LittleEndian));
     }
 
     /// Test if the `DefaultParser` parses debug info correctly.
@@ -235,7 +232,7 @@ mod test {
         ).unwrap();
 
         let context = DefaultParser.parse(file_content).unwrap();
-        // Test 42th instruction
+        // Test 42nd instruction
         let instr = context
             .capstone
             .disasm_all(context.elf.section_data_by_name(".text").unwrap(), 0x6210)

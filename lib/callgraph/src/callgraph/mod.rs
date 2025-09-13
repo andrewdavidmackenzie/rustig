@@ -9,9 +9,9 @@
 
 mod lea_dynamic_calls;
 mod static_calls;
+mod x86_cg_builder;
 
 use crate::CallGraph;
-use crate::CallGraphOptions;
 use crate::Context;
 use crate::Invocation;
 use crate::Location;
@@ -22,14 +22,11 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::string::String;
 
-use capstone::*;
-
 use fallible_iterator::FallibleIterator;
 
 use crate::errors::*;
 
-use gimli::AttributeValue;
-use gimli::CompilationUnitHeader;
+use gimli::{AttributeValue, UnitHeader};
 use gimli::DW_AT_comp_dir;
 use gimli::DW_AT_high_pc;
 use gimli::DW_AT_inline;
@@ -37,7 +34,7 @@ use gimli::DW_AT_language;
 use gimli::DW_AT_low_pc;
 use gimli::DW_TAG_compile_unit;
 use gimli::DebuggingInformationEntry;
-use gimli::EndianBuf;
+use gimli::EndianSlice;
 use gimli::EntriesCursor;
 use gimli::LittleEndian;
 
@@ -49,6 +46,7 @@ use petgraph::stable_graph::{NodeIndex, StableGraph};
 use crate::crate_utils;
 use crate::dwarf_utils;
 use std::marker::PhantomData;
+use crate::callgraph::x86_cg_builder::X86CallGraphBuilder;
 
 pub struct CompilationInfo<'a> {
     compilation_dirs: &'a [&'a str],
@@ -69,11 +67,6 @@ pub trait InvocationFinder<P, I: Default, F: Default> {
 /// Trait marking objects that are able to build a call graph from a parsed binary
 pub trait CallGraphBuilder<PMetadata: Default, IMetadata: Default, FMetadata> {
     fn build_call_graph(&self, ctx: &Context) -> CallGraph<PMetadata, IMetadata, FMetadata>;
-}
-
-/// Struct able to build a callgraph from an x86 binary
-struct X86CallGraphBuilder<P, I, F> {
-    invocation_finders: Vec<Box<dyn InvocationFinder<P, I, F>>>,
 }
 
 /// Struct abstracting the machine code for a procedure.
@@ -108,8 +101,8 @@ struct NameInfo {
 /// - If a function was inlined, it will not be returned
 /// - If the cursor was not at a compile unit entry, it will panic
 fn iterate_compilation_unit<PM: Default>(
-    unit: CompilationUnitHeader<EndianBuf<LittleEndian>>,
-    entries: &mut EntriesCursor<EndianBuf<LittleEndian>>,
+    unit: UnitHeader<EndianSlice<LittleEndian>>,
+    entries: &mut EntriesCursor<EndianSlice<LittleEndian>>,
     ctx: &Context,
     compilation_unit_dirs: &[&str],
 ) -> Vec<Procedure<PM>> {
@@ -139,11 +132,11 @@ fn iterate_compilation_unit<PM: Default>(
 
 /// Function creating `Procedure`s for all nodes in a DWARF compilation unit.
 fn parse_compilation_unit_subprograms<PM: Default>(
-    unit: &CompilationUnitHeader<EndianBuf<LittleEndian>, usize>,
-    entries: &mut EntriesCursor<EndianBuf<LittleEndian>>,
+    unit: &UnitHeader<EndianSlice<LittleEndian>, usize>,
+    entries: &mut EntriesCursor<EndianSlice<LittleEndian>>,
     ctx: &Context,
     compilation_unit_dirs: &[&str],
-    cu: &DebuggingInformationEntry<EndianBuf<LittleEndian>, usize>,
+    cu: &DebuggingInformationEntry<EndianSlice<LittleEndian>, usize>,
 ) -> Vec<Procedure<PM>> {
     // Iterate over entries
     // AZ: I feel like we should try to optimize this, by doing next_sibling when an DW_TAG_subprogram was hit
@@ -190,11 +183,11 @@ fn parse_compilation_unit_subprograms<PM: Default>(
 
 /// Function that builds a `Procedure` for a DWARF DW_AT_subprogram entry(`entry`)
 fn get_procedure<PM: Default>(
-    unit: &CompilationUnitHeader<EndianBuf<LittleEndian>, usize>,
+    unit: &UnitHeader<EndianSlice<LittleEndian>, usize>,
     ctx: &Context,
     compilation_unit_dirs: &[&str],
-    cu: &DebuggingInformationEntry<EndianBuf<LittleEndian>, usize>,
-    entry: &DebuggingInformationEntry<EndianBuf<LittleEndian>, usize>,
+    cu: &DebuggingInformationEntry<EndianSlice<LittleEndian>, usize>,
+    entry: &DebuggingInformationEntry<EndianSlice<LittleEndian>, usize>,
     start_address: u64,
     size: u64,
 ) -> Procedure<PM> {
@@ -208,21 +201,12 @@ fn get_procedure<PM: Default>(
         raw_instr: proc_instr_raw,
     } = fetch_procedure_machine_code(ctx, start_address, size);
 
-    let location = ctx.file_context
-        .find_frames(start_address)
-        // Clippy will complain when we use expect here (#[warn(expect_fun_call)])
-        .unwrap_or_else(|_| panic!(
-            "Failed to load frames for function: {}",
-            linkage_name_demangled
-        ))
-        .filter_map(|frame| frame.location)
+    let lookup_result = ctx.loader.find_frames(start_address).unwrap();
+
+    let location = lookup_result
+        .filter_map(|frame| Ok(frame.location))
         .last()
-        .unwrap_or_else(|_| {
-            panic!(
-                "Location of function address: {:X} could not be traced back to source code",
-                start_address
-            )
-        })
+        .unwrap()
         .map(Location::from);
 
     let defining_crate = {
@@ -273,7 +257,7 @@ fn fetch_procedure_machine_code<'a>(
 }
 
 fn fetch_function_location_info(
-    entry: &DebuggingInformationEntry<EndianBuf<LittleEndian>, usize>,
+    entry: &DebuggingInformationEntry<EndianSlice<LittleEndian>, usize>,
     linkage_name: &str,
 ) -> LocationInfo {
     let start_address =
@@ -297,9 +281,9 @@ fn fetch_function_location_info(
 
 /// Function returning the names iof the procedure references in `entry`.
 fn fetch_function_names(
-    unit: &CompilationUnitHeader<EndianBuf<LittleEndian>, usize>,
+    unit: &UnitHeader<EndianSlice<LittleEndian>, usize>,
     ctx: &Context,
-    entry: &DebuggingInformationEntry<EndianBuf<LittleEndian>>,
+    entry: &DebuggingInformationEntry<EndianSlice<LittleEndian>>,
 ) -> NameInfo {
     // Fetch function details
     let name = dwarf_utils::get_attr_str_with_origin_traversal(
@@ -344,7 +328,7 @@ fn get_compilation_unit_directories<'a>(ctx: &'a Context) -> Vec<&'a str> {
             .unwrap();
 
         // Retrieve the name of the compilation unit
-        if entry.tag() == gimli::DW_TAG_compile_unit {
+        if entry.tag() == DW_TAG_compile_unit {
             let cu_name =
                 dwarf_utils::get_attr_string_buf(entry, DW_AT_comp_dir, &ctx.dwarf_strings);
             compilation_unit_dirs.push(cu_name.unwrap().to_string().unwrap());
@@ -364,7 +348,7 @@ fn get_compilation_unit_directories<'a>(ctx: &'a Context) -> Vec<&'a str> {
 fn get_procedures_for_compilation_unit<PMetadata: Default>(
     ctx: &Context,
     compilation_unit_dirs: &[&str],
-    unit_header: CompilationUnitHeader<EndianBuf<LittleEndian>, usize>,
+    unit_header: UnitHeader<EndianSlice<LittleEndian>, usize>,
 ) -> Vec<Procedure<PMetadata>> {
     // Find entries in cu
     let abbrevs = unit_header.abbreviations(&ctx.dwarf_abbrev).unwrap();
@@ -379,80 +363,6 @@ fn get_procedures_for_compilation_unit<PMetadata: Default>(
     res
 }
 
-impl<PMetadata: Default, IMetadata: Default, FMetadata: Default>
-    CallGraphBuilder<PMetadata, IMetadata, FMetadata>
-    for X86CallGraphBuilder<PMetadata, IMetadata, FMetadata>
-{
-    /// Function building the full call graph from the information in `ctx`.
-    fn build_call_graph(&self, ctx: &Context) -> CallGraph<PMetadata, IMetadata, FMetadata> {
-        // Initialize empty fields for callgraph
-        let mut graph = petgraph::stable_graph::StableGraph::new();
-        // Index mapping procedure start addresses to their index in the graph
-        let mut proc_index = HashMap::new();
-        // Index mapping call/jump instruction addresses to the index of their enclosing procedure in the graph
-        let mut call_index = HashMap::new();
-
-        // Fill fields for CallGraph
-        let call_graph: CallGraph<PMetadata, IMetadata, FMetadata> = {
-            let compilation_unit_dirs = get_compilation_unit_directories(ctx);
-            let rust_version = dwarf_utils::get_rust_version(ctx);
-
-            // Iterator over compilation units
-            ctx.dwarf_info.units()
-                // Map all compilation units to their respective procedures
-                .map(|unit_header| {
-                    get_procedures_for_compilation_unit(ctx, &compilation_unit_dirs, unit_header)
-                })
-                // Flatten Vec<Vec<Procedure>> to Vec<Procedure>
-                .fold(vec!(), |mut vec: Vec<Procedure<PMetadata>>, mut elem| {
-                    vec.append(&mut elem);
-                    vec
-                })
-                .expect("Failed to flatten")
-                .into_iter()
-                // Add all nodes to the graph, and all (addr, index) pairs to the proc_index map
-                .for_each(|procedure| {
-                    let address = procedure.start_address;
-                    let idx = graph.add_node(Rc::new(RefCell::new(procedure)));
-
-                    // https://github.com/aquynh/capstone/blob/0de0c8b49dba478759eccabb0c9caddc2b653375/include/x86.h#L1567
-                    let group_calls = InsnGroupId(2);
-                    let group_jumps = InsnGroupId(1);
-
-                    // Add every call instruction of a procedure to the address to index map.
-                    graph[idx].borrow().disassembly.iter()
-                        .filter(|insn| {
-                            ctx.capstone.insn_group_ids(insn).unwrap().any(|id| id == group_calls || id == group_jumps)
-                        })
-                        .for_each(|insn| {
-                            call_index.insert(insn.address(), idx); });
-
-                    proc_index.insert(address, idx);
-                });
-
-            self.invocation_finders.iter().for_each(|finder| {
-                finder.find_invocations(
-                    &mut graph,
-                    &mut proc_index,
-                    &mut call_index,
-                    ctx,
-                    CompilationInfo {
-                        compilation_dirs: &compilation_unit_dirs,
-                        rust_version: &rust_version.as_ref().cloned().unwrap_or_default(),
-                    },
-                )
-            });
-
-            CallGraph {
-                graph,
-                proc_index,
-                call_index,
-            }
-        };
-
-        call_graph
-    }
-}
 /// Returns a call graph builder based on the passed `CallGraphOptions`.
 /// If the binary was compiled for x86 or x86_64, a builder will be returned.
 /// In other cases, the procedure will return an error.
@@ -461,7 +371,6 @@ pub fn get_call_graph_builder<
     IMetadata: Default + 'static,
     FMetadata: Default + 'static,
 >(
-    _options: &CallGraphOptions,
     ctx: &Context,
 ) -> Result<Box<dyn CallGraphBuilder<PMetadata, IMetadata, FMetadata>>> {
     match ctx.elf.machine() {
@@ -491,66 +400,11 @@ mod test {
     use Context;
     use crate::InvocationType;
 
-    use addr2line::Context as Addr2LineContext;
+    use super::lea_dynamic_calls::LEABasedDynamicInvocationFinder;
+    use super::static_calls::StaticCallInvocationFinder;
 
-    use callgraph::lea_dynamic_calls::LEABasedDynamicInvocationFinder;
-    use callgraph::static_calls::StaticCallInvocationFinder;
-
-    use capstone::arch::BuildsCapstone;
-    use capstone::Capstone;
-
-    use object::ElfFile;
-    use object::File as ContextFile;
     use object::Object;
-
-    /// Local helper function to create a Context
-    fn parse<'a>(file_content: &'a [u8]) -> Context<'a> {
-        let elf =
-            ElfFile::parse(&file_content).expect("Failed to parse file content to ElfFile format");
-
-        let file_context = Addr2LineContext::new(&ContextFile::parse(&file_content)
-            .expect("Failed to parse file content to File format"))
-            .unwrap();
-
-        let endianness = gimli::LittleEndian;
-        let mode = capstone::arch::x86::ArchMode::Mode64;
-
-        let debug_info_data = elf.section_data_by_name(".debug_info")
-            .expect("No .debug_info section in binary");
-        let dwarf_info = DebugInfo::new(debug_info_data, endianness);
-
-        let debug_abbrev_data = elf.section_data_by_name(".debug_abbrev")
-            .expect("No .debug_abbrev section in binary");
-        let dwarf_abbrev = DebugAbbrev::new(debug_abbrev_data, endianness);
-
-        let debug_str_data = elf.section_data_by_name(".debug_str")
-            .expect("No .debug_str section in binary");
-        let dwarf_strings = DebugStr::new(debug_str_data, endianness);
-
-        let debug_line_data = elf.section_data_by_name(".debug_line")
-            .expect("No .debug_line section in binary");
-        let dwarf_line = DebugLine::new(debug_line_data, endianness);
-
-        let mut capstone = Capstone::new()
-            .x86()
-            .mode(mode)
-            .detail(true)
-            .build()
-            .expect("Failed to construct disassembler");
-        capstone
-            .set_detail(true)
-            .expect("Failed to enable detailed mode");
-
-        Context {
-            elf,
-            file_context,
-            dwarf_info,
-            dwarf_abbrev,
-            dwarf_strings,
-            dwarf_line,
-            capstone,
-        }
-    }
+    use crate::parse::get_parser;
 
     // Two workspaces could have similar names, for example: test_subjects and test_subjects_lib
     // The program should still distinguish between these two
@@ -561,7 +415,8 @@ mod test {
             &test_common::TestSubjectType::Debug,
         ).unwrap();
 
-        let context = parse(file_content);
+        let parser = get_parser().expect("Could not parse test file contents");
+        let context = parser.parse(file_content);
         let call_graph: CallGraph<(), (), ()> = X86CallGraphBuilder {
             invocation_finders: vec![
                 Box::new(StaticCallInvocationFinder),
@@ -595,7 +450,8 @@ mod test {
             &test_common::TestSubjectType::DebugStableRustc,
         ).unwrap();
 
-        let context = parse(file_content);
+        let parser = get_parser().expect("Could not parse test file contents");
+        let context = parser.parse(file_content);
         let call_graph: CallGraph<(), (), ()> = X86CallGraphBuilder {
             invocation_finders: vec![
                 Box::new(StaticCallInvocationFinder),
@@ -669,7 +525,8 @@ mod test {
             &test_common::TestSubjectType::Debug,
         ).unwrap();
 
-        let context = parse(file_content);
+        let parser = get_parser().expect("Could not parse test file contents");
+        let context = parser.parse(file_content);
 
         let call_graph: CallGraph<(), (), ()> = X86CallGraphBuilder {
             invocation_finders: vec![

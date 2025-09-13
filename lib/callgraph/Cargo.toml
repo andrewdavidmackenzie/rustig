@@ -9,15 +9,15 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-addr2line = "0.6.0"
+addr2line = "0.25.0"
 petgraph = "0.8.2"
 object = "0.7.0"
-goblin = "0.0.13"
-gimli = "0.15.0"
+goblin = "0.0.13" # Used only for the Endianess constant!
+gimli = "0.32.2"
 capstone = { git = "https://github.com/capstone-rust/capstone-rs.git", rev = "dc10578aa27414afc93f0a87959b2f0c22dc66c3" }
 elf = "0.8.0"
 error-chain = "0.12.4"
-fallible-iterator = "0.1.2"
+fallible-iterator = "0.3.0"
 byteorder = "1.2.3"
 
 [dev-dependencies]

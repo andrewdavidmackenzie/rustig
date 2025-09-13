@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod binary;
 mod filter;
 mod graph_output;
 mod marker;
@@ -19,6 +18,7 @@ pub mod test_utils;
 
 use callgraph::*;
 
+use std::io::Read;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::stable_graph::StableGraph;
 
@@ -29,8 +29,8 @@ use std::rc::Rc;
 use std::fmt;
 use std::fmt::Display;
 use std::fmt::Formatter;
-
-use errors::Result;
+use std::path::Path;
+use callgraph::errors::*;
 
 #[derive(Debug, Clone, Default)]
 pub enum IntermediateBacktrace {
@@ -317,8 +317,6 @@ pub type RustigCallGraph =
 /// * If the file is not a valid x86 or x86_64 ELF file.
 ///
 pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
-    let builder = binary::get_builder(options)?;
-
     let markers = marker::get_code_markers(options);
     let filters = filter::get_node_filters(options);
 
@@ -328,14 +326,12 @@ pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
     let graph_output_full = graph_output::get_graph_output_full(options);
     let graph_output_filtered = graph_output::get_graph_output_filtered(options);
 
-    // Build and parse binary
-    let binary = builder.build()?;
-
     // Create callgraph
-    let cg_options = CallGraphOptions { binary };
-    let file_content = &read_file(&cg_options)?;
-    let (mut call_graph, context): (RustigCallGraph, Context) =
-        build_call_graph(&cg_options, file_content)?;
+    let path_str = &options.binary_path.clone().ok_or("No path to binary provided.")?;
+    let binary_path = Path::new(path_str);
+    let file_content = read(binary_path)?;
+    let (mut call_graph, context): (RustigCallGraph, Context) = build_call_graph(&file_content,
+    binary_path)?;
 
     graph_output_full.write_graph(&call_graph);
 
@@ -351,6 +347,17 @@ pub fn find_panics(options: &AnalysisOptions) -> Result<PanicCallsCollection> {
     pattern_finder.find_patterns(&context, &panic_calls);
 
     Ok(panic_calls)
+}
+
+fn read(path: &Path) -> callgraph::errors::Result<Vec<u8>> {
+    let mut file_content = Vec::new();
+    let mut file = std::fs::File::open(path)
+        .chain_err(|| ErrorKind::IOError(path.to_str().unwrap().to_string()))?;
+
+    file.read_to_end(&mut file_content)
+        .chain_err(|| ErrorKind::ReadError(path.to_str().unwrap().to_string()))?;
+
+    Ok(file_content)
 }
 
 #[cfg(test)]

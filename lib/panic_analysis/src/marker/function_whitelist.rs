@@ -125,7 +125,7 @@ mod tests {
 
         Context {
             elf,
-            file_context,
+            loader: file_context,
             dwarf_info,
             dwarf_abbrev,
             dwarf_strings,

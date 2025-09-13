@@ -11,14 +11,11 @@ use crate::RustigCallGraph;
 
 use callgraph::Context;
 
-use fallible_iterator::FallibleIterator;
-
 use crate::marker::CodeMarker;
 
 use callgraph::dwarf_utils;
 
-use gimli::CompilationUnitHeader;
-use gimli::EndianBuf;
+use gimli::{EndianSlice, UnitHeader};
 use gimli::LittleEndian;
 
 /// Implementation of the `CodeMarker` to mark the main entry procedure
@@ -27,16 +24,16 @@ struct MainEntryCodeMarker;
 
 impl CodeMarker for MainEntryCodeMarker {
     fn mark_code(&self, call_graph: &RustigCallGraph, context: &Context) {
-        context
+        let mut iter = context
             .dwarf_info
-            .units()
-            .iterator()
-            .map(Result::unwrap)
-            .for_each(|unit| {
+            .units();
+
+        while let Some(unit) = iter.next().unwrap() {
                 // Find entries in compilation unit
                 self.mark_entry_point(call_graph, context, unit)
-            })
+        }
     }
+
     #[cfg(test)]
     fn get_type_name(&self) -> &str {
         "MainEntryCodeMarker"
@@ -48,7 +45,7 @@ impl MainEntryCodeMarker {
         &self,
         call_graph: &RustigCallGraph,
         context: &Context,
-        unit: CompilationUnitHeader<EndianBuf<LittleEndian>>,
+        unit: UnitHeader<EndianSlice<LittleEndian>>,
     ) {
         let abbrevs = unit.abbreviations(&context.dwarf_abbrev).unwrap();
         let mut entries = unit.entries(&abbrevs);
@@ -153,9 +150,9 @@ mod test {
             while let Some((_, entry)) = entries.next_dfs().unwrap() {
                 // If we find an entry for a function, print it.
                 if let Some(gimli::AttributeValue::Flag(true)) =
-                    entry.attr_value(gimli::DW_AT_main_subprogram).unwrap()
+                    entry.attr_value(gimli::constants::DW_AT_main_subprogram).unwrap()
                 {
-                    start_address = dwarf_utils::get_attr_addr_value(&entry, gimli::DW_AT_low_pc)
+                    start_address = dwarf_utils::get_attr_addr_value(&entry, gimli::constants::DW_AT_low_pc)
                         .expect("No DW_AT_low_pc attribute found for function");
                 }
             }
